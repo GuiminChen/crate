@@ -1,0 +1,16 @@
+# CRATE 文档索引
+
+| 文档 | 说明 |
+|------|------|
+| [PRD.md](PRD.md) | 产品需求：愿景、用户故事、MVP/V1/V2、功能与非功能需求、风险、里程碑。 |
+| [technical-design.md](technical-design.md) | 技术方案：架构、`vault` 布局、编译 / 问答 / Lint 流程、检索门闸、安全与可观测性。 |
+| [lessons-learned.md](lessons-learned.md) | 缺陷复盘与预防（与测试、变更同步维护）。 |
+
+**CRATE**（**C**ompile **R**aw **A**rchives，**T**racked in the **vault**，into **E**ncyclopedic **wiki**）是一条 **本地优先、文件优先** 的流水线：从 `raw/` 采集到由 LLM 参与维护的互联 `wiki/`。仓库定位与快速入口见根目录 [README.md](../README.md)。
+
+## 外部参考（灵感来源）
+
+- [Andrej Karpathy 关于 LLM 知识库的帖文（X）](https://x.com/karpathy/status/2039805659525644595)
+- [Thread Reader 同串整理](https://threadreaderapp.com/thread/2039805659525644595.html)
+
+以上链接用于问题陈述的启发；**CRATE 为独立产品化抽象**，并非任何第三方工作流的官方实现。

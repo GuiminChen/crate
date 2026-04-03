@@ -1,0 +1,12 @@
+# Conda 环境：与 pyproject.toml（requires-python >=3.9）对齐，默认使用 3.11
+# 创建：/opt/anaconda3/condabin/conda env create -f environment.yml
+# 激活：conda activate crate
+
+name: crate
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - -e ".[dev]"

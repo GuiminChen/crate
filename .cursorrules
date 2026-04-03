@@ -1,0 +1,26 @@
+# CRATE AI development guidelines
+
+## Product shape
+
+CRATE is a **file-first personal knowledge compiler**: `raw/` captures stay traceable; `wiki/` holds a linked Markdown encyclopedia maintained by LLM-assisted compile passes, plus lint, search, and optional Q&A outputs.
+
+## Non-negotiables
+
+1. **Local-first**: The vault on disk is the source of truth; cloud is for inference only when the user opts in.
+2. **Zone boundaries**: Default policy — do **not** overwrite files under `raw/**`. LLM write paths are **`wiki/**`** and configured output dirs (e.g. `wiki/outputs/**`).
+3. **Provenance**: Compiled pages must tie back to `raw/` or URLs via front matter (`sources`).
+4. **Safety**: Canonicalize paths; reject escape from vault root. No secrets in repo or wiki. No arbitrary shell from agents unless explicitly scoped and documented.
+5. **Budgets**: Compile and Q&A runs should respect token/page budgets and remain **idempotent** where possible.
+6. **Quality**: New Python code uses type hints, structured logging, tests for non-trivial logic, and matches `pyproject` tool settings (black, isort, flake8, mypy).
+7. **Testing**: Follow [.cursor/rules/testing.md](.cursor/rules/testing.md): every feature or substantive change updates `tests/`; run **`pytest`** and ensure green before calling work done.
+8. **Bug memory**: Follow [.cursor/rules/lessons_from_bugs.md](.cursor/rules/lessons_from_bugs.md): when fixing a bug, append [docs/lessons-learned.md](docs/lessons-learned.md) and add a regression test when feasible.
+
+## When implementing features
+
+- **M0 / M1 focus** is recorded in [.cursor/rules/architecture.md](.cursor/rules/architecture.md) (vault + manual compile POC + minimal lint; then agent Q&A + file outputs + feedback).
+- Read [docs/PRD.md](docs/PRD.md) for scope and priorities; [docs/technical-design.md](docs/technical-design.md) for flows and vault layout.
+- Prefer small, reviewable diffs; extend existing abstractions instead of duplicating vault/path logic.
+
+## License and dependencies
+
+Apache-2.0 project; prefer Apache-2.0–compatible dependencies.

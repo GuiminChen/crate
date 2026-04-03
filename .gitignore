@@ -1,0 +1,131 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+\#*#
+.#*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+htmlcov/
+.coverage
+junit.xml
+test-results/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Build
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Models and large data (optional local paths)
+models/
+data/
+*.bin
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.gguf
+*.ggml
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.parquet
+*.feather
+*.arrow
+
+# Vector stores
+chroma/
+chroma.sqlite3
+.qdrant/
+.weaviate/
+.pinecone/
+
+# Logs and sessions
+logs/
+*.log
+sessions/
+workspace/
+
+# Secrets and local config
+*.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+secrets.yaml
+secrets.yml
+config.local.yaml
+*.key
+*.pem
+*.cert
+service-account-*.json
+
+# CRATE vault / ingest (uncomment if you keep a personal vault inside the repo)
+# raw/
+# vault/
+
+# Editors
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.vscode/*.code-workspace
+.idea/
+*.iml
+*.ipr
+*.iws
+.ropeproject
+
+# Docs site generators
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+
+# Temp
+temp/
+tmp/
+*.tmp
+*.temp
+
+# AI review artifact from scripts/ai_review.py
+ai_review_summary.md
