@@ -129,3 +129,6 @@ tmp/
 
 # AI review artifact from scripts/ai_review.py
 ai_review_summary.md
+/raw
+/meta
+/wiki

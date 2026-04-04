@@ -5,7 +5,7 @@
 | Phase | Scope (confirmed) |
 |-------|-------------------|
 | **M0** | Vault 约定 + **手工触发**编译 POC + **最小** Lint |
-| **M1** | Agent 问答 + **文件化**输出 + **回流**（outputs → 可被索引/提升） |
+| **M1** | Agent 问答（`crate ask` + 工具读/搜/写 `wiki/outputs`）+ **回流**（默认追加 `RECENT.md`） — **已实现初版** |
 
 **产品界面策略**：首期以 **CLI**（及可选 Cursor / 外部 Agent）为控制面；**阅读与导航**优先用 **Obsidian（或任意 Markdown 编辑器）** 打开 vault，**不**把 Web 前端作为 M0/M1 的必要交付。若后续需要管理台，再单独立项。
 

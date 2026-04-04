@@ -29,12 +29,14 @@ class DeepSeekConfig:
 
 def load_deepseek_config() -> DeepSeekConfig:
     """Read API key from ``CRATE_DEEPSEEK_API_KEY`` or ``DEEPSEEK_API_KEY``."""
-    key = os.environ.get("CRATE_DEEPSEEK_API_KEY") or os.environ.get(
-        "DEEPSEEK_API_KEY", ""
-    ).strip()
+    key = (
+        os.environ.get("CRATE_DEEPSEEK_API_KEY")
+        or os.environ.get("DEEPSEEK_API_KEY", "").strip()
+    )
     if not key:
         raise ValueError(
-            "Set CRATE_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY for compile (not hardcoded)."
+            "Set CRATE_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY for compile "
+            "(do not hardcode secrets)."
         )
     base = (
         os.environ.get("CRATE_DEEPSEEK_BASE_URL", DEFAULT_BASE_URL).strip().rstrip("/")

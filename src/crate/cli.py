@@ -1,4 +1,4 @@
-"""CRATE CLI: ``init``, ``compile``, ``lint``."""
+"""CRATE CLI: ``init``, ``compile``, ``ask``, ``lint``."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from crate.compile_run import run_compile
 from crate.init_vault import init_vault
 from crate.lint_wiki import lint_markdown_links
+from crate.qa_agent import run_qa
 from crate.vault_paths import VaultContext, resolve_vault_root
 
 
@@ -33,6 +34,21 @@ def _cmd_init(args: argparse.Namespace) -> int:
 def _cmd_compile(args: argparse.Namespace) -> int:
     ctx = _ctx_from_args(args)
     path = run_compile(ctx)
+    print(path.relative_to(ctx.root))
+    return 0
+
+
+def _cmd_ask(args: argparse.Namespace) -> int:
+    ctx = _ctx_from_args(args)
+    q = " ".join(args.question).strip()
+    if not q:
+        print("Error: empty question", file=sys.stderr)
+        return 2
+    path = run_qa(
+        ctx,
+        q,
+        feedback=not args.no_feedback,
+    )
     print(path.relative_to(ctx.root))
     return 0
 
@@ -59,7 +75,11 @@ def _cmd_lint(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="crate", description="CRATE vault compiler CLI")
+    """Construct the ``crate`` CLI argument parser."""
+    p = argparse.ArgumentParser(
+        prog="crate",
+        description="CRATE vault compiler CLI",
+    )
     p.add_argument(
         "--vault",
         metavar="PATH",
@@ -76,10 +96,32 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_init.set_defaults(func=_cmd_init)
 
-    p_compile = sub.add_parser("compile", help="POC: summarize raw/*.md via DeepSeek to wiki")
+    p_compile = sub.add_parser(
+        "compile",
+        help="POC: summarize raw/*.md via DeepSeek into wiki/notes",
+    )
     p_compile.set_defaults(func=_cmd_compile)
 
-    p_lint = sub.add_parser("lint", help="Check wiki markdown links point to existing paths")
+    p_ask = sub.add_parser(
+        "ask",
+        help="Q&A agent (DeepSeek tools): answer from vault, file under wiki/outputs/",
+    )
+    p_ask.add_argument(
+        "question",
+        nargs="+",
+        help="Question text (words joined with spaces)",
+    )
+    p_ask.add_argument(
+        "--no-feedback",
+        action="store_true",
+        help="Do not append a line to wiki/_index/RECENT.md",
+    )
+    p_ask.set_defaults(func=_cmd_ask)
+
+    p_lint = sub.add_parser(
+        "lint",
+        help="Verify wiki relative markdown links resolve to files",
+    )
     p_lint.add_argument(
         "--json",
         action="store_true",
@@ -91,6 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Parse CLI args, run the selected subcommand, return exit code."""
     load_dotenv()
     parser = build_parser()
     args = parser.parse_args(argv)

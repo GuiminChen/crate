@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from crate.vault_paths import VaultContext
 
 __all__ = ["init_vault", "VAULT_README", "PLACEHOLDER_TOPICS", "PLACEHOLDER_RECENT"]
@@ -77,7 +78,7 @@ def init_vault(ctx: VaultContext, *, force: bool = False) -> list[Path]:
         created.append(agents)
     state = root / "meta" / "compile_state.json"
     if not state.exists() or force:
-        state.write_text('{}\n', encoding="utf-8")
+        state.write_text("{}\n", encoding="utf-8")
         created.append(state)
     return created
 

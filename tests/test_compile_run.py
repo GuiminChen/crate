@@ -5,7 +5,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from crate.compile_run import build_compile_prompt, collect_raw_markdown, run_compile
+from crate.compile_run import (
+    build_compile_prompt,
+    collect_raw_markdown,
+    collect_raw_sources,
+    run_compile,
+)
 from crate.init_vault import init_vault
 from crate.llm import load_deepseek_config
 from crate.vault_paths import VaultContext
@@ -25,6 +30,32 @@ def test_collect_raw_finds_markdown(tmp_path: Path) -> None:
     paths = collect_raw_markdown(ctx)
     assert len(paths) == 1
     assert paths[0].name == "a.md"
+
+
+def test_collect_raw_sources_includes_pdf(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "raw" / "papers" / "a.pdf").write_bytes(b"%PDF-1.4\n")
+    (tmp_path / "raw" / "papers" / "b.md").write_text("# B", encoding="utf-8")
+    paths = collect_raw_sources(ctx)
+    assert {p.name for p in paths} == {"a.pdf", "b.md"}
+
+
+def test_build_compile_prompt_includes_pdf_extract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "raw" / "papers" / "paper.pdf").write_bytes(b"%PDF-1.4\n")
+    monkeypatch.setattr(
+        "crate.compile_run.extract_pdf_text",
+        lambda _p: "Abstract: hello from PDF.",
+    )
+    paths = collect_raw_sources(ctx)
+    msg = build_compile_prompt(ctx, paths)
+    assert "raw/papers/paper.pdf" in msg
+    assert "extracted from PDF" in msg
+    assert "hello from PDF" in msg
 
 
 def test_build_compile_prompt_includes_relative_paths(tmp_path: Path) -> None:

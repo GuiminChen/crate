@@ -23,6 +23,7 @@ dependencies = [
     "structlog>=24.0.0",
     "python-dotenv>=1.0.0",
     "openai>=1.0.0",
+    "pypdf>=5.0.0",
 ]
 
 [project.scripts]

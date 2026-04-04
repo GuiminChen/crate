@@ -20,5 +20,7 @@ def test_init_idempotent_without_force(tmp_path: Path) -> None:
     init_vault(ctx)
     first_top = (tmp_path / "wiki" / "_index" / "TOPICS.md").read_text(encoding="utf-8")
     init_vault(ctx)
-    second_top = (tmp_path / "wiki" / "_index" / "TOPICS.md").read_text(encoding="utf-8")
+    second_top = (tmp_path / "wiki" / "_index" / "TOPICS.md").read_text(
+        encoding="utf-8"
+    )
     assert first_top == second_top

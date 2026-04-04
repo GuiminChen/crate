@@ -1,4 +1,4 @@
-"""Deterministic wiki checks: markdown link targets must exist under the vault."""
+"""Deterministic wiki checks: local markdown links must resolve under the vault."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def _resolve_link_target(md_file: Path, href: str, ctx: VaultContext) -> Path | 
 
 
 def lint_markdown_links(ctx: VaultContext) -> list[LintIssue]:
-    """For each ``wiki/**/*.md`` file, flag relative ``]()`` links whose target path is missing."""
+    """Scan ``wiki/**/*.md`` and report missing relative link targets."""
     wiki = ctx.wiki_dir()
     issues: list[LintIssue] = []
     if not wiki.is_dir():
@@ -54,7 +54,7 @@ def lint_markdown_links(ctx: VaultContext) -> list[LintIssue]:
             continue
         try:
             ctx.validate_under_vault(path)
-        except Exception:
+        except VaultPathError:
             continue
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         for i, line in enumerate(lines, start=1):

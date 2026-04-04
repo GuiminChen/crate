@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
 
 __all__ = ["VaultContext", "VaultPathError", "resolve_vault_root"]
 
@@ -15,7 +14,10 @@ class VaultPathError(ValueError):
 
 
 def resolve_vault_root(cwd: Path, vault_arg: str | None) -> Path:
-    """Return absolute, resolved vault root. ``vault_arg`` is relative to ``cwd`` if not absolute."""
+    """Return absolute vault root.
+
+    If ``vault_arg`` is set and not absolute, it is resolved relative to ``cwd``.
+    """
     base = Path(vault_arg).expanduser() if vault_arg else cwd
     if not base.is_absolute():
         base = (cwd / base).resolve()
@@ -47,18 +49,18 @@ class VaultContext:
         return p
 
     def raw_dir(self) -> Path:
+        """Return resolved ``raw/`` directory under the vault root."""
         return self.root / "raw"
 
     def wiki_dir(self) -> Path:
+        """Return resolved ``wiki/`` directory under the vault root."""
         return self.root / "wiki"
 
     def meta_dir(self) -> Path:
+        """Return resolved ``meta/`` directory under the vault root."""
         return self.root / "meta"
 
 
-_DEFAULT_SENTINEL: Final[object] = object()
-
-
 def default_cwd() -> Path:
-    """Current working directory as an absolute path."""
+    """Return the absolute current working directory."""
     return Path(os.getcwd()).resolve()

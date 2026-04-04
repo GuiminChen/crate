@@ -13,6 +13,7 @@ CRATE is a **file-first personal knowledge compiler**: ingest messy **raw** capt
 Design docs below are **in Chinese** (中文).
 
 - **[docs/README.md](docs/README.md)** — 文档索引
+- **[docs/usage.md](docs/usage.md)** — 使用说明（CLI、vault、环境变量、工作流）
 - **[docs/PRD.md](docs/PRD.md)** — 产品需求与里程碑
 - **[docs/technical-design.md](docs/technical-design.md)** — 架构、vault 布局、编译 / 问答 / Lint
 
@@ -104,6 +105,26 @@ pytest -q
 
 Open the repo in VS Code and select “Reopen in Container” to use [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) (Python 3.11, editable install, pre-commit).
 
+### CLI (M0)
+
+After `pip install -e ".[dev]"`, the `crate` command is available:
+
+```bash
+crate init [--vault PATH]           # create raw/wiki/meta tree (default vault = cwd)
+crate compile [--vault PATH]        # raw/**/*.md + **/*.pdf (text extract); needs API key
+crate lint [--vault PATH] [--json]  # check wiki relative links; exit 1 if broken
+```
+
+`compile` calls DeepSeek (`deepseek-chat` at `https://api.deepseek.com` by default); override with `CRATE_DEEPSEEK_BASE_URL` / `CRATE_DEEPSEEK_MODEL` if needed.
+
+**M1 — Q&A and feedback**
+
+```bash
+crate ask [--vault PATH] [--no-feedback] What is in TOPICS?
+```
+
+`ask` runs a tool loop (`vault_read`, `vault_search`, `vault_write_output`) via the same DeepSeek API keys, writes the answer under `wiki/outputs/`, and by default appends one line to `wiki/_index/RECENT.md` (disable with `--no-feedback`).
+
 ### Optional AI PR review
 
 The workflow [`.github/workflows/ai-code-review.yml`](.github/workflows/ai-code-review.yml) runs only when repository secret `OPENAI_API_KEY` is set. Override model with `OPENAI_REVIEW_MODEL` if needed.
@@ -115,7 +136,7 @@ The workflow [`.github/workflows/ai-code-review.yml`](.github/workflows/ai-code-
 | Phase | Focus |
 |-------|--------|
 | **M0** | Vault contract + manual compile proof-of-concept + minimal lint |
-| **M1** | Q&A agent + file outputs + feedback into the wiki |
+| **M1** | Q&A agent + file outputs + feedback (`crate ask`, `wiki/outputs`, `RECENT.md`) |
 | **M2** | Search CLI + scale gates + optional vectors |
 | **M3** | Ephemeral “question wiki” orchestration (advanced) |
 
