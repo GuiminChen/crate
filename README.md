@@ -123,7 +123,26 @@ crate lint [--vault PATH] [--json]  # check wiki relative links; exit 1 if broke
 crate ask [--vault PATH] [--no-feedback] What is in TOPICS?
 ```
 
-`ask` runs a tool loop (`vault_read`, `vault_search`, `vault_write_output`) via the same DeepSeek API keys, writes the answer under `wiki/outputs/`, and by default appends one line to `wiki/_index/RECENT.md` (disable with `--no-feedback`).
+`ask` runs a tool loop (`vault_read`, `vault_search`, `vault_search_semantic`, `vault_write_output`) via the same DeepSeek API keys, writes the answer under `wiki/outputs/`, and by default appends one line to `wiki/_index/RECENT.md` (disable with `--no-feedback`). Use `--session <id>` after `crate ephemeral init` to allow drafts under `wiki/_ephemeral/<id>/`.
+
+**M2 — Search, stats, semantic index**
+
+```bash
+crate search [--vault PATH] [--json] [--max-hits N] [--semantic] <words...>
+crate stats [--vault PATH] [--json] [--strict] [--exclude-outputs]
+crate index [--vault PATH] [--reset]   # needs CRATE_EMBEDDING_API_KEY or OPENAI_API_KEY
+```
+
+`compile` / `ask` print scale-gate hints to stderr unless `--quiet-gate`. Semantic search needs `crate index` first.
+
+**M3 — Ephemeral question wiki**
+
+```bash
+crate ephemeral init [--vault PATH]                    # prints new session id
+crate ask [--session ID] ...                           # can write under wiki/_ephemeral/ID/
+crate ephemeral finalize <session_id> [--vault PATH] [--delete]
+crate ephemeral clean [--vault PATH] --older-than DAYS
+```
 
 ### Optional AI PR review
 
@@ -137,8 +156,8 @@ The workflow [`.github/workflows/ai-code-review.yml`](.github/workflows/ai-code-
 |-------|--------|
 | **M0** | Vault contract + manual compile proof-of-concept + minimal lint |
 | **M1** | Q&A agent + file outputs + feedback (`crate ask`, `wiki/outputs`, `RECENT.md`) |
-| **M2** | Search CLI + scale gates + optional vectors |
-| **M3** | Ephemeral “question wiki” orchestration (advanced) |
+| **M2** | `crate search`, `stats`, `index`, semantic tool + env-gated embeddings |
+| **M3** | `crate ephemeral` + `ask --session` + finalize/clean |
 
 Adjust priorities via Issues.
 

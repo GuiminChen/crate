@@ -34,6 +34,28 @@ def test_vault_write_output_only_outputs(tmp_path: Path) -> None:
     assert "Error" in vt.vault_write_output("wiki/notes/bad.md", "x")
 
 
+def test_vault_search_semantic_no_index(tmp_path: Path) -> None:
+    """vault_search_semantic returns error when index is missing."""
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    vt = VaultTools(ctx)
+    out = vt.vault_search_semantic("anything")
+    assert "Error" in out
+
+
+def test_vault_write_ephemeral_session(tmp_path: Path) -> None:
+    """With session_id, writes under wiki/_ephemeral/<id>/ are allowed."""
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    sid = "test-sess-1"
+    d = tmp_path / "wiki" / "_ephemeral" / sid
+    d.mkdir(parents=True)
+    vt = VaultTools(ctx, session_id=sid)
+    rel = f"wiki/_ephemeral/{sid}/draft.md"
+    res = vt.vault_write_output(rel, "# Draft\n")
+    assert "Wrote" in res
+
+
 def test_vault_search_finds_line(tmp_path: Path) -> None:
     """vault_search returns JSON hits."""
     ctx = VaultContext(root=tmp_path)

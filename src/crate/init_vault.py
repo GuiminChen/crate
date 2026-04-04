@@ -35,6 +35,7 @@ DIRS: tuple[str, ...] = (
     "wiki/concepts",
     "wiki/notes",
     "wiki/outputs",
+    "wiki/_ephemeral",
     "meta",
 )
 

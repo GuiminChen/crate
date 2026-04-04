@@ -69,9 +69,7 @@ def extract_pdf_text(path: Path) -> str:
             parts.append(t)
     out = "\n".join(parts).strip()
     if not out:
-        return (
-            "(No extractable text from PDF; it may be image-only or need OCR.)"
-        )
+        return "(No extractable text from PDF; it may be image-only or need OCR.)"
     return out
 
 
@@ -95,9 +93,7 @@ def build_compile_prompt(
         rel = p.relative_to(ctx.root).as_posix()
         body = _read_source_text(p, max_chars=max_chars_per_file)
         if p.suffix.lower() == ".pdf":
-            chunks.append(
-                f"## File: {rel}\n\n_(text extracted from PDF)_\n\n{body}\n"
-            )
+            chunks.append(f"## File: {rel}\n\n_(text extracted from PDF)_\n\n{body}\n")
         else:
             chunks.append(f"## File: {rel}\n\n{body}\n")
     if not chunks:

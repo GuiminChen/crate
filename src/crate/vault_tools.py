@@ -6,16 +6,26 @@ import json
 from typing import Any
 
 from crate.vault_paths import VaultContext, VaultPathError
+from crate.vault_search import MAX_SEARCH_HITS_CAP, search_markdown_hits
 
 __all__ = ["VaultTools", "TOOL_SPECS"]
 
 _MAX_READ_BYTES = 200_000
-_MAX_SEARCH_HITS = 30
+_MAX_SEARCH_HITS = 30  # capped by MAX_SEARCH_HITS_CAP in search_markdown_hits
 _OUTPUT_PREFIX = "wiki/outputs/"
 
 
-def TOOL_SPECS() -> list[dict[str, Any]]:
+def TOOL_SPECS(*, session_id: str | None = None) -> list[dict[str, Any]]:
     """OpenAI-compatible tool definitions for chat completions."""
+    write_desc = (
+        "Write final answer markdown under wiki/outputs/ only. "
+        "Path must start with wiki/outputs/."
+    )
+    if session_id:
+        write_desc = (
+            f"Write markdown under wiki/outputs/ or wiki/_ephemeral/{session_id}/ "
+            "(session drafts). Path must use one of these prefixes."
+        )
     return [
         {
             "type": "function",
@@ -61,11 +71,30 @@ def TOOL_SPECS() -> list[dict[str, Any]]:
         {
             "type": "function",
             "function": {
-                "name": "vault_write_output",
+                "name": "vault_search_semantic",
                 "description": (
-                    "Write final answer markdown under wiki/outputs/ only. "
-                    "Path must start with wiki/outputs/."
+                    "Semantic search over indexed chunks (requires `crate index` and "
+                    "embedding API env). Returns JSON: path, line, score, snippet. "
+                    "Prefer this when the vault is large."
                 ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "max_hits": {
+                            "type": "integer",
+                            "description": "Cap results (default 10)",
+                        },
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "vault_write_output",
+                "description": write_desc,
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -88,9 +117,10 @@ def TOOL_SPECS() -> list[dict[str, Any]]:
 class VaultTools:
     """Side-effecting helpers bound to a vault."""
 
-    def __init__(self, ctx: VaultContext) -> None:
-        """Bind tools to ``ctx``."""
+    def __init__(self, ctx: VaultContext, *, session_id: str | None = None) -> None:
+        """Bind tools to ``ctx``; ``session_id`` enables ``wiki/_ephemeral/`` writes."""
         self._ctx = ctx
+        self._session_id = session_id.strip() if session_id else None
 
     def vault_read(self, path: str) -> str:
         """Read and return UTF-8 text or an error string."""
@@ -115,47 +145,39 @@ class VaultTools:
 
     def vault_search(self, query: str, max_hits: int | None = None) -> str:
         """Return JSON array of {path, line, snippet}."""
-        cap = min(max_hits or 20, _MAX_SEARCH_HITS)
-        q = query.strip()
-        if not q:
-            return "[]"
-        hits: list[dict[str, Any]] = []
-        for base_name in ("wiki", "raw"):
-            base = self._ctx.root / base_name
-            if not base.is_dir():
-                continue
-            for md in sorted(base.rglob("*.md")):
-                if len(hits) >= cap:
-                    break
-                try:
-                    self._ctx.validate_under_vault(md)
-                except VaultPathError:
-                    continue
-                try:
-                    lines = md.read_text(
-                        encoding="utf-8", errors="replace"
-                    ).splitlines()
-                except OSError:
-                    continue
-                for i, line in enumerate(lines, start=1):
-                    if len(hits) >= cap:
-                        break
-                    if q.lower() in line.lower():
-                        snippet = line.strip()[:500]
-                        hits.append(
-                            {
-                                "path": md.relative_to(self._ctx.root).as_posix(),
-                                "line": i,
-                                "snippet": snippet,
-                            }
-                        )
+        cap = min(max_hits or 20, _MAX_SEARCH_HITS, MAX_SEARCH_HITS_CAP)
+        hits = search_markdown_hits(self._ctx, query, max_hits=cap)
+        return json.dumps(hits, ensure_ascii=False)
+
+    def vault_search_semantic(self, query: str, max_hits: int | None = None) -> str:
+        """Return JSON array of semantic hits or an error string."""
+        from crate.vector_index import index_exists, semantic_search_hits
+
+        if not index_exists(self._ctx):
+            return (
+                "Error: no vector index. Run `crate index` after setting an "
+                "embedding API key (CRATE_EMBEDDING_API_KEY or OPENAI_API_KEY)."
+            )
+        cap = min(max_hits or 10, 50)
+        try:
+            hits = semantic_search_hits(self._ctx, query, max_hits=cap)
+        except ValueError as e:
+            return f"Error: {e}"
         return json.dumps(hits, ensure_ascii=False)
 
     def vault_write_output(self, path: str, content: str) -> str:
-        """Write markdown under wiki/outputs/ only."""
+        """Write markdown under wiki/outputs/ or session ephemeral subtree."""
         rel = path.strip().lstrip("/").replace("\\", "/")
-        if not rel.startswith(_OUTPUT_PREFIX):
-            return "Error: path must start with wiki/outputs/"
+        ok = rel.startswith(_OUTPUT_PREFIX)
+        if not ok and self._session_id:
+            prefix = f"wiki/_ephemeral/{self._session_id}/"
+            if rel.startswith(prefix):
+                ok = True
+        if not ok:
+            return (
+                "Error: path must start with wiki/outputs/ or "
+                "wiki/_ephemeral/<session>/"
+            )
         p = (self._ctx.root / rel).resolve()
         try:
             canon = self._ctx.validate_under_vault(p)
@@ -175,6 +197,11 @@ class VaultTools:
             return self.vault_read(str(args.get("path", "")))
         if name == "vault_search":
             return self.vault_search(
+                str(args.get("query", "")),
+                max_hits=args.get("max_hits"),
+            )
+        if name == "vault_search_semantic":
+            return self.vault_search_semantic(
                 str(args.get("query", "")),
                 max_hits=args.get("max_hits"),
             )

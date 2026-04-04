@@ -43,7 +43,9 @@ def _resolve_link_target(md_file: Path, href: str, ctx: VaultContext) -> Path | 
         return None
 
 
-def lint_markdown_links(ctx: VaultContext) -> list[LintIssue]:
+def lint_markdown_links(
+    ctx: VaultContext, *, include_ephemeral: bool = False
+) -> list[LintIssue]:
     """Scan ``wiki/**/*.md`` and report missing relative link targets."""
     wiki = ctx.wiki_dir()
     issues: list[LintIssue] = []
@@ -55,6 +57,8 @@ def lint_markdown_links(ctx: VaultContext) -> list[LintIssue]:
         try:
             ctx.validate_under_vault(path)
         except VaultPathError:
+            continue
+        if not include_ephemeral and "_ephemeral" in path.relative_to(ctx.root).parts:
             continue
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         for i, line in enumerate(lines, start=1):

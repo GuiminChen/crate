@@ -9,6 +9,7 @@ from typing import Any, Callable, cast
 
 from openai import OpenAI
 
+from crate.ephemeral import validate_session_id
 from crate.feedback import append_output_to_recent
 from crate.llm import DeepSeekConfig, build_openai_client, load_deepseek_config
 from crate.vault_paths import VaultContext
@@ -19,7 +20,7 @@ __all__ = ["run_qa", "build_system_prompt"]
 _MAX_ROUNDS = 12
 
 
-def build_system_prompt(ctx: VaultContext) -> str:
+def build_system_prompt(ctx: VaultContext, *, session_id: str | None = None) -> str:
     """System prompt with vault rules and light index context."""
     topics = ctx.wiki_dir() / "_index" / "TOPICS.md"
     idx = ""
@@ -31,12 +32,23 @@ def build_system_prompt(ctx: VaultContext) -> str:
                 idx += "\n…(TOPICS truncated)…"
         except OSError:
             idx = "(could not read TOPICS.md)"
+    tools_line = (
+        "vault_read, vault_search, vault_search_semantic (if index exists), "
+        "vault_write_output"
+    )
+    out_rule = "under wiki/outputs/ such as wiki/outputs/qa-YYYYMMDD.md"
+    if session_id:
+        out_rule = (
+            f"under wiki/_ephemeral/{session_id}/ for drafts or wiki/outputs/ "
+            "for the final note"
+        )
     return (
         "You are the CRATE vault Q&A assistant. Answer using the vault only; "
-        "cite file paths when you use facts. Tools: vault_read, vault_search, "
-        "vault_write_output. You MUST call vault_write_output exactly once at "
-        "the end with the full markdown answer (with ## sections) and a path "
-        "under wiki/outputs/ such as wiki/outputs/qa-YYYYMMDD.md. "
+        "cite file paths when you use facts. Tools: "
+        f"{tools_line}. Prefer vault_search_semantic for large vaults when the "
+        "tool returns hits. You MUST call vault_write_output exactly once at "
+        f"the end with the full markdown answer (with ## sections) and a path "
+        f"{out_rule}. "
         "Do not invent files not in the vault. Be conservative if evidence is thin.\n\n"
         f"--- TOPICS excerpt ---\n{idx or '(empty)'}\n"
     )
@@ -52,15 +64,19 @@ def run_qa(
     client_factory: Callable[[], tuple[OpenAI, str]] | None = None,
     feedback: bool = True,
     max_rounds: int = _MAX_ROUNDS,
+    session_id: str | None = None,
 ) -> Path:
     """
     Run a tool loop until the model finishes or max rounds.
 
     Returns path to the answer file under ``wiki/outputs/``.
     """
-    tools = TOOL_SPECS()
-    vt = VaultTools(ctx)
-    system = build_system_prompt(ctx)
+    sid: str | None = None
+    if session_id is not None:
+        sid = validate_session_id(session_id)
+    tools = TOOL_SPECS(session_id=sid)
+    vt = VaultTools(ctx, session_id=sid)
+    system = build_system_prompt(ctx, session_id=sid)
 
     if client_factory is not None:
         client_used, model_name = client_factory()
