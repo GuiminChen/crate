@@ -22,7 +22,11 @@ dependencies = [
     "pydantic>=2.0.0",
     "structlog>=24.0.0",
     "python-dotenv>=1.0.0",
+    "openai>=1.0.0",
 ]
+
+[project.scripts]
+crate = "crate.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -35,7 +39,6 @@ dev = [
     "flake8-docstrings>=1.7.0",
     "mypy>=1.8.0",
     "pre-commit>=3.6.0",
-    "openai>=1.0.0",
 ]
 
 [project.urls]
