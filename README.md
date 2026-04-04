@@ -14,6 +14,7 @@ Design docs below are **in Chinese** (中文).
 
 - **[docs/README.md](docs/README.md)** — 文档索引
 - **[docs/usage.md](docs/usage.md)** — 使用说明（CLI、vault、环境变量、工作流）
+- **[docs/obsidian.md](docs/obsidian.md)** — 与 Obsidian 搭配（库根即 vault、日常流程）
 - **[docs/PRD.md](docs/PRD.md)** — 产品需求与里程碑
 - **[docs/technical-design.md](docs/technical-design.md)** — 架构、vault 布局、编译 / 问答 / Lint
 

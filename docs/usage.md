@@ -21,6 +21,8 @@
 
 不要在仓库内混放大量私人笔记时，可把 vault 放在任意独立文件夹，仅通过 `--vault` 指向即可。
 
+若使用 **Obsidian**，把「库」根目录设为上述 vault 根即可与 CRATE 共用同一套 `raw/`、`wiki/`；步骤与注意见 [obsidian.md](obsidian.md)。
+
 ---
 
 ## 3. 环境变量与密钥（LLM）
@@ -248,6 +250,7 @@ crate ask 根据搜索结果，总结 concept 相关链接指向哪些文件？
 | 文档 | 内容 |
 |------|------|
 | [README.md](../README.md) | 仓库说明、安装、CLI 速览、路线图 |
+| [obsidian.md](obsidian.md) | 与 Obsidian 共用 vault 的简要教程 |
 | [technical-design.md](technical-design.md) | 架构与 vault 设计 |
 | [PRD.md](PRD.md) | 需求与里程碑 |
 | [lessons-learned.md](lessons-learned.md) | 缺陷与预防记录 |
