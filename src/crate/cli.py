@@ -9,6 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from crate.activity_log import append_activity_log
 from crate.compile_run import run_compile
 from crate.ephemeral import (
     clean_old_ephemeral,
@@ -54,6 +55,9 @@ def _maybe_print_gate(ctx: VaultContext, quiet: bool) -> None:
 
 
 def _cmd_compile(args: argparse.Namespace) -> int:
+    import structlog
+
+    log = structlog.get_logger()
     ctx = _ctx_from_args(args)
     _maybe_print_gate(ctx, args.quiet_gate)
     result = run_compile(ctx, full=args.full, wiki_graph=args.wiki_graph)
@@ -65,7 +69,18 @@ def _cmd_compile(args: argparse.Namespace) -> int:
         )
         return 0
     assert result.output_path is not None
-    print(result.output_path.relative_to(ctx.root))
+    out_rel = result.output_path.relative_to(ctx.root).as_posix()
+    print(out_rel)
+    append_activity_log(
+        ctx,
+        "compile",
+        f"output={out_rel}" + (" wiki-graph" if args.wiki_graph else ""),
+    )
+    log.info(
+        "crate_compile_done",
+        output=out_rel,
+        wiki_graph=bool(args.wiki_graph),
+    )
     return 0
 
 
@@ -79,6 +94,7 @@ def _cmd_watch(args: argparse.Namespace) -> int:
         poll_interval=args.poll_interval,
         quiet_gate=args.quiet_gate,
         wiki_graph=args.wiki_graph,
+        native_watch=args.native,
     )
     return 0
 
@@ -92,6 +108,9 @@ def _cmd_serve_search(args: argparse.Namespace) -> int:
 
 
 def _cmd_ask(args: argparse.Namespace) -> int:
+    import structlog
+
+    log = structlog.get_logger()
     ctx = _ctx_from_args(args)
     _maybe_print_gate(ctx, args.quiet_gate)
     q = " ".join(args.question).strip()
@@ -111,7 +130,9 @@ def _cmd_ask(args: argparse.Namespace) -> int:
         feedback=not args.no_feedback,
         session_id=sid,
     )
-    print(path.relative_to(ctx.root))
+    out = path.relative_to(ctx.root).as_posix()
+    print(out)
+    log.info("crate_ask_done", output=out)
     return 0
 
 
@@ -183,6 +204,9 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
         print(f"compile_wiki_last: {report['compile_wiki_last_present']}")
         print(f"semantic_wiki_report: {report['semantic_wiki_report_present']}")
         print(f"embeddings_sqlite: {report['embeddings_sqlite_present']}")
+        print(f"wiki_body_graph: {report['wiki_body_graph_present']}")
+        print(f"raw_wiki_coverage: {report['raw_wiki_coverage_present']}")
+        print(f"wiki_index_extended: {report['wiki_index_extended_present']}")
         print(f"embedding_configured: {report['embedding_configured']}")
         print(f"semantic_index_ready: {report['semantic_index_ready']}")
         print(f"semantic_ready: {report['semantic_ready']}")
@@ -269,8 +293,11 @@ def _cmd_ephemeral_clean(args: argparse.Namespace) -> int:
 
 
 def _cmd_wiki_check(args: argparse.Namespace) -> int:
+    import structlog
+
     from crate.wiki_semantic import run_semantic_wiki_check
 
+    log = structlog.get_logger()
     ctx = _ctx_from_args(args)
     try:
         env = run_semantic_wiki_check(ctx, write_report=not args.no_write)
@@ -278,8 +305,57 @@ def _cmd_wiki_check(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
     report = env.get("report", env)
-    payload = env if args.json_full else report
+    apply_results: list[dict[str, object]] | None = None
+    if args.apply or args.apply_dry_run:
+        from crate.wiki_check_apply import apply_wiki_check_fixes
+
+        dry_run = not args.apply
+        fixes = report.get("fixes") if isinstance(report, dict) else None
+        if isinstance(fixes, list) and fixes:
+            apply_results = apply_wiki_check_fixes(ctx, fixes, dry_run=dry_run)
+        else:
+            apply_results = []
+    if apply_results is not None:
+        if args.json_full:
+            env_out = dict(env)
+            env_out["apply_results"] = apply_results
+            payload = env_out
+        elif isinstance(report, dict):
+            r_out = dict(report)
+            r_out["apply_results"] = apply_results
+            payload = r_out
+        else:
+            payload = {"apply_results": apply_results}
+    else:
+        payload = env if args.json_full else report
     print(json.dumps(payload, ensure_ascii=False, indent=2))
+    detail = "ok"
+    if args.no_write:
+        detail = "completed (meta/semantic_wiki_report.json not written)"
+    if apply_results is not None:
+        n_ok = sum(1 for r in apply_results if r.get("ok"))
+        detail += f"; apply: {n_ok}/{len(apply_results)} ok"
+    append_activity_log(ctx, "wiki-check", detail)
+    log.info("crate_wiki_check_done", apply_used=apply_results is not None)
+    return 0
+
+
+def _cmd_wiki_promote(args: argparse.Namespace) -> int:
+    import structlog
+
+    from crate.wiki_promote import promote_markdown_to_concept
+
+    log = structlog.get_logger()
+    ctx = _ctx_from_args(args)
+    src = str(args.source).strip().replace("\\", "/")
+    try:
+        out = promote_markdown_to_concept(ctx, src, slug=args.slug)
+    except (VaultPathError, FileNotFoundError, OSError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+    rel = out.relative_to(ctx.root).as_posix()
+    print(rel)
+    log.info("crate_wiki_promote_done", source=src, output=rel)
     return 0
 
 
@@ -289,6 +365,102 @@ def _cmd_wiki_figures_init(args: argparse.Namespace) -> int:
     ctx = _ctx_from_args(args)
     p = ensure_figures_dir(ctx)
     print(p.relative_to(ctx.root))
+    return 0
+
+
+def _cmd_wiki_graph(args: argparse.Namespace) -> int:
+    from crate.wiki_body_graph import write_wiki_body_graph
+
+    ctx = _ctx_from_args(args)
+    json_path, md_path = write_wiki_body_graph(
+        ctx,
+        include_ephemeral=args.include_ephemeral,
+        include_outputs=args.include_outputs,
+        write_md=args.md,
+    )
+    print(json_path.relative_to(ctx.root).as_posix())
+    if md_path is not None:
+        print(md_path.relative_to(ctx.root).as_posix())
+    return 0
+
+
+def _cmd_wiki_index_extend(args: argparse.Namespace) -> int:
+    from crate.wiki_index_extend import write_wiki_index_extended
+
+    ctx = _ctx_from_args(args)
+    p = write_wiki_index_extended(ctx)
+    print(p.relative_to(ctx.root).as_posix())
+    return 0
+
+
+def _cmd_report_raw_wiki(args: argparse.Namespace) -> int:
+    import json
+
+    from crate.raw_wiki_coverage import (
+        build_raw_wiki_coverage,
+        write_raw_wiki_coverage,
+    )
+
+    ctx = _ctx_from_args(args)
+    if args.write:
+        p = write_raw_wiki_coverage(
+            ctx, include_ephemeral=args.include_ephemeral
+        )
+        print(p.relative_to(ctx.root).as_posix())
+    else:
+        payload = build_raw_wiki_coverage(
+            ctx, include_ephemeral=args.include_ephemeral
+        )
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _cmd_ingest(args: argparse.Namespace) -> int:
+    import structlog
+    from pathlib import Path
+
+    from crate.activity_log import append_activity_log
+    from crate.compile_run import run_compile
+    from crate.ingest_session import default_session_path, parse_ingest_session_text
+
+    log = structlog.get_logger()
+    ctx = _ctx_from_args(args)
+    if not args.dry_run:
+        _maybe_print_gate(ctx, args.quiet_gate)
+    session_path = Path(args.session) if args.session else default_session_path(ctx)
+    if not session_path.is_absolute():
+        session_path = (ctx.root / session_path).resolve()
+    try:
+        text = session_path.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        print(f"Error: cannot read session file: {e}", file=sys.stderr)
+        return 2
+    rels = parse_ingest_session_text(text)
+    paths = [ctx.root / r for r in rels]
+    if args.dry_run:
+        for r in rels:
+            print(r)
+        return 0
+    result = run_compile(
+        ctx,
+        wiki_graph=args.wiki_graph,
+        only_paths=paths,
+    )
+    if result.skipped:
+        print(
+            "No matching raw paths from session (files must exist under raw/).",
+            file=sys.stderr,
+        )
+        return 1
+    assert result.output_path is not None
+    out_rel = result.output_path.relative_to(ctx.root).as_posix()
+    print(out_rel)
+    append_activity_log(
+        ctx,
+        "ingest",
+        f"session={session_path.relative_to(ctx.root).as_posix()} output={out_rel}",
+    )
+    log.info("crate_ingest_done", output=out_rel)
     return 0
 
 
@@ -371,7 +543,20 @@ def _cmd_lint(args: argparse.Namespace) -> int:
         include_wikilinks=args.wikilinks,
         include_duplicate_headings=not args.no_duplicate_headings,
         include_raw=args.raw,
+        include_orphans=args.orphans,
+        include_strict_concepts=args.strict_concepts,
     )
+    if getattr(args, "http_external", False):
+        from crate.lint_http import lint_http_external_links
+
+        issues.extend(
+            lint_http_external_links(
+                ctx,
+                include_ephemeral=args.include_ephemeral,
+                timeout=float(args.http_timeout),
+                concurrency=int(args.http_concurrency),
+            )
+        )
     if args.json:
         payload = [
             {
@@ -467,6 +652,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--wiki-graph",
         action="store_true",
         help="Run multi-page compile (same as compile --wiki-graph) after debounce",
+    )
+    p_watch.add_argument(
+        "--native",
+        action="store_true",
+        help="Use watchdog filesystem events if installed (pip install watchdog)",
     )
     p_watch.set_defaults(func=_cmd_watch)
 
@@ -667,6 +857,45 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also scan raw/**/*.md (same rules as wiki/)",
     )
+    p_lint.add_argument(
+        "--orphans",
+        action="store_true",
+        help=(
+            "Also report wiki pages with no inbound links from other wiki pages "
+            "(excludes wiki/_index/INDEX|TOPICS|RECENT|BACKLINKS|BODYGRAPH.md "
+            "and wiki/outputs/)"
+        ),
+    )
+    p_lint.add_argument(
+        "--strict-concepts",
+        action="store_true",
+        help=(
+            "If meta/wiki_index.json exists, verify related_slugs / "
+            "conflicts_with_slugs / supersedes_slugs reference existing concept slugs"
+        ),
+    )
+    p_lint.add_argument(
+        "--http-external",
+        action="store_true",
+        help=(
+            "Also check http(s) URLs in [text](url) "
+            "(network; set SKIP_HTTP_LINT=1 to skip)"
+        ),
+    )
+    p_lint.add_argument(
+        "--http-timeout",
+        type=float,
+        default=10.0,
+        metavar="SEC",
+        help="Per-URL timeout for --http-external (default 10)",
+    )
+    p_lint.add_argument(
+        "--http-concurrency",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Parallel URL checks for --http-external (default 1)",
+    )
     p_lint.set_defaults(func=_cmd_lint)
 
     p_wcheck = sub.add_parser(
@@ -682,6 +911,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--json-full",
         action="store_true",
         help="Include envelope (generated, model) in JSON output",
+    )
+    p_wcheck.add_argument(
+        "--apply-dry-run",
+        action="store_true",
+        help=(
+            "After the report, apply whitelist fixes from report.fixes in dry-run "
+            "only (no writes to wiki); includes apply_results in JSON"
+        ),
+    )
+    p_wcheck.add_argument(
+        "--apply",
+        action="store_true",
+        help=(
+            "Apply whitelist fixes from report.fixes to wiki/concepts/*.md "
+            "(merge_related_slugs / merge_conflicts_with_slugs only)"
+        ),
     )
     p_wcheck.set_defaults(func=_cmd_wiki_check)
 
@@ -718,6 +963,98 @@ def build_parser() -> argparse.ArgumentParser:
         help="Create wiki/outputs/figures/ for matplotlib scripts",
     )
     p_wfig.set_defaults(func=_cmd_wiki_figures_init)
+
+    p_wprom = wiki_sub.add_parser(
+        "promote",
+        help="Copy a markdown file (e.g. wiki/outputs/*.md) into wiki/concepts/",
+    )
+    p_wprom.add_argument(
+        "source",
+        metavar="PATH",
+        help="Vault-relative path to a .md file (e.g. wiki/outputs/qa-....md)",
+    )
+    p_wprom.add_argument(
+        "--slug",
+        metavar="SLUG",
+        default=None,
+        help="Concept slug (default: derived from title or filename)",
+    )
+    p_wprom.set_defaults(func=_cmd_wiki_promote)
+
+    p_wgraph = wiki_sub.add_parser(
+        "graph",
+        help="Write meta/wiki_body_graph.json (markdown + wikilink edges in prose)",
+    )
+    p_wgraph.add_argument(
+        "--md",
+        action="store_true",
+        help="Also write wiki/_index/BODYGRAPH.md (hub degrees)",
+    )
+    p_wgraph.add_argument(
+        "--include-ephemeral",
+        action="store_true",
+        help="Include wiki/_ephemeral/**/*.md",
+    )
+    p_wgraph.add_argument(
+        "--include-outputs",
+        action="store_true",
+        help="Include wiki/outputs/** in the graph",
+    )
+    p_wgraph.set_defaults(func=_cmd_wiki_graph)
+
+    p_widx = wiki_sub.add_parser(
+        "index-extend",
+        help="Write meta/wiki_index_extended.json (wiki/notes titles + excerpts)",
+    )
+    p_widx.set_defaults(func=_cmd_wiki_index_extend)
+
+    p_report = sub.add_parser(
+        "report",
+        help="Deterministic reports (raw coverage, …)",
+    )
+    report_sub = p_report.add_subparsers(dest="report_cmd", required=True)
+    p_raw_wiki = report_sub.add_parser(
+        "raw-wiki",
+        help="List raw/*.md|pdf and whether wiki/ references each path",
+    )
+    p_raw_wiki.add_argument(
+        "--write",
+        action="store_true",
+        help="Write meta/raw_wiki_coverage.json",
+    )
+    p_raw_wiki.add_argument(
+        "--include-ephemeral",
+        action="store_true",
+        help="Scan wiki/_ephemeral/**/*.md for references",
+    )
+    p_raw_wiki.set_defaults(func=_cmd_report_raw_wiki)
+
+    p_ingest = sub.add_parser(
+        "ingest",
+        help="Compile only raw paths listed in .crate/ingest_session.md",
+    )
+    p_ingest.add_argument(
+        "--session",
+        metavar="PATH",
+        default=None,
+        help="Session file (default: .crate/ingest_session.md under vault)",
+    )
+    p_ingest.add_argument(
+        "--wiki-graph",
+        action="store_true",
+        help="Multi-page wiki compile (same as compile --wiki-graph)",
+    )
+    p_ingest.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print resolved raw paths only; do not call the model",
+    )
+    p_ingest.add_argument(
+        "--quiet-gate",
+        action="store_true",
+        help="Do not print scale gate hints to stderr",
+    )
+    p_ingest.set_defaults(func=_cmd_ingest)
 
     p_marp = sub.add_parser(
         "marp",

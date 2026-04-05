@@ -43,6 +43,9 @@ def vault_doctor_report(ctx: VaultContext) -> dict[str, Any]:
     compile_wiki_last = meta / "compile_wiki_last.json"
     semantic_wiki_report = meta / "semantic_wiki_report.json"
     embeddings_db = meta / _EMBEDDINGS_SQLITE
+    wiki_body_graph = meta / "wiki_body_graph.json"
+    raw_wiki_coverage = meta / "raw_wiki_coverage.json"
+    wiki_index_extended = meta / "wiki_index_extended.json"
     base = health_payload(ctx)
     return {
         **base,
@@ -56,4 +59,7 @@ def vault_doctor_report(ctx: VaultContext) -> dict[str, Any]:
         "compile_wiki_last_present": compile_wiki_last.is_file(),
         "semantic_wiki_report_present": semantic_wiki_report.is_file(),
         "embeddings_sqlite_present": embeddings_db.is_file(),
+        "wiki_body_graph_present": wiki_body_graph.is_file(),
+        "raw_wiki_coverage_present": raw_wiki_coverage.is_file(),
+        "wiki_index_extended_present": wiki_index_extended.is_file(),
     }

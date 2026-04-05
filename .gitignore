@@ -115,6 +115,9 @@ service-account-*.json
 *.iws
 .ropeproject
 
+# Node (Obsidian plugin dev)
+obsidian-plugin/**/node_modules/
+
 # Docs site generators
 _site/
 .sass-cache/

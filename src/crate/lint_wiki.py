@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,9 +11,24 @@ from crate.vault_paths import VaultContext, VaultPathError
 
 __all__ = [
     "LintIssue",
+    "WikiOutgoingEdge",
+    "iter_wiki_outgoing_edges",
     "lint_markdown_links",
     "resolve_wikilink_first_existing",
+    "lint_wiki_orphans",
+    "lint_concept_slug_refs",
 ]
+
+# Orphan lint: skip nav stubs (often only linked outside the wiki graph / Obsidian).
+_ORPHAN_EXCLUDE_EXACT = frozenset(
+    {
+        "wiki/_index/INDEX.md",
+        "wiki/_index/TOPICS.md",
+        "wiki/_index/RECENT.md",
+        "wiki/_index/BACKLINKS.md",
+        "wiki/_index/BODYGRAPH.md",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -26,6 +42,15 @@ class LintIssue:
     message: str
 
 
+@dataclass(frozen=True)
+class WikiOutgoingEdge:
+    """One resolved wiki-to-wiki link from prose (fenced code skipped)."""
+
+    line: int
+    kind: str  # "md_link" | "wikilink"
+    target_rel: str  # vault-relative posix path under wiki/
+
+
 # [text](path)  — path not starting with http(s): mailto: # anchor-only
 _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 _WIKI_LINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
@@ -36,6 +61,114 @@ def _wikilink_inner_to_target(raw: str) -> str:
     """Obsidian-style inner: ``Page|alias`` or ``path#heading`` -> file stem/path."""
     part = raw.split("|", 1)[0].strip()
     return part.split("#", 1)[0].strip()
+
+
+def iter_wiki_outgoing_edges(path: Path, ctx: VaultContext) -> list[WikiOutgoingEdge]:
+    """Collect resolved wiki ``.md`` targets from prose (skips fenced code)."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    out: list[WikiOutgoingEdge] = []
+    in_fence = False
+    for i, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        for m in _MD_LINK_RE.finditer(line):
+            href = m.group(1).strip()
+            resolved = _resolve_link_target(path, href, ctx)
+            if resolved and resolved.exists() and resolved.suffix.lower() == ".md":
+                try:
+                    ctx.validate_under_vault(resolved)
+                except VaultPathError:
+                    continue
+                rel = resolved.relative_to(ctx.root).as_posix()
+                if rel.startswith("wiki/"):
+                    out.append(
+                        WikiOutgoingEdge(line=i, kind="md_link", target_rel=rel)
+                    )
+        for m in _WIKI_LINK_RE.finditer(line):
+            if m.start() > 0 and line[m.start() - 1] == "!":
+                continue
+            inner = m.group(1)
+            p = resolve_wikilink_first_existing(ctx, inner)
+            if p and p.suffix.lower() == ".md":
+                try:
+                    rel = p.relative_to(ctx.root).as_posix()
+                except ValueError:
+                    continue
+                if rel.startswith("wiki/"):
+                    out.append(
+                        WikiOutgoingEdge(line=i, kind="wikilink", target_rel=rel)
+                    )
+    return out
+
+
+def _iter_wiki_outgoing_links(path: Path, ctx: VaultContext) -> set[str]:
+    """Wiki `.md` targets linked from `path` (prose only; skips fenced code)."""
+    return {e.target_rel for e in iter_wiki_outgoing_edges(path, ctx)}
+
+
+def lint_wiki_orphans(
+    ctx: VaultContext,
+    *,
+    include_ephemeral: bool = False,
+    exclude_index_stubs: bool = True,
+    exclude_outputs: bool = True,
+) -> list[LintIssue]:
+    """Wiki pages with no inbound links from other pages (deterministic graph).
+
+    Md links + wikilinks in prose (skips fenced code). Self-link ≠ inbound.
+    """
+    wiki = ctx.wiki_dir()
+    if not wiki.is_dir():
+        return []
+
+    wiki_files: list[str] = []
+    for path in sorted(wiki.rglob("*.md")):
+        if not path.is_file():
+            continue
+        try:
+            ctx.validate_under_vault(path)
+        except VaultPathError:
+            continue
+        rel_parts = path.relative_to(ctx.root).parts
+        if not include_ephemeral and "_ephemeral" in rel_parts:
+            continue
+        rel = path.relative_to(ctx.root).as_posix()
+        if exclude_outputs and rel.startswith("wiki/outputs/"):
+            continue
+        if exclude_index_stubs and rel in _ORPHAN_EXCLUDE_EXACT:
+            continue
+        wiki_files.append(rel)
+
+    wiki_set = set(wiki_files)
+    inbound: dict[str, set[str]] = {}
+
+    for src in wiki_files:
+        src_path = ctx.root / src
+        for tgt in _iter_wiki_outgoing_links(src_path, ctx):
+            if tgt not in wiki_set or tgt == src:
+                continue
+            inbound.setdefault(tgt, set()).add(src)
+
+    issues: list[LintIssue] = []
+    for rel in sorted(wiki_files):
+        if rel not in inbound:
+            issues.append(
+                LintIssue(
+                    file=rel,
+                    line=1,
+                    kind="orphan_page",
+                    target="",
+                    message="wiki page has no inbound links from other wiki pages",
+                )
+            )
+    return issues
 
 
 def resolve_wikilink_first_existing(ctx: VaultContext, inner: str) -> Path | None:
@@ -190,6 +323,54 @@ def _resolve_link_target(md_file: Path, href: str, ctx: VaultContext) -> Path | 
         return None
 
 
+def lint_concept_slug_refs(ctx: VaultContext) -> list[LintIssue]:
+    """Flag slug refs in wiki_index graph fields when the target concept is missing."""
+    idx_path = ctx.meta_dir() / "wiki_index.json"
+    if not idx_path.is_file():
+        return []
+    try:
+        raw = idx_path.read_text(encoding="utf-8")
+        data = json.loads(raw) if raw.strip() else {}
+    except (OSError, json.JSONDecodeError):
+        return []
+    concepts = data.get("concepts")
+    if not isinstance(concepts, list):
+        return []
+    slug_set: set[str] = set()
+    for c in concepts:
+        if isinstance(c, dict) and isinstance(c.get("slug"), str):
+            slug_set.add(c["slug"])
+    cdir = ctx.wiki_dir() / "concepts"
+    if cdir.is_dir():
+        for p in cdir.glob("*.md"):
+            if p.is_file():
+                slug_set.add(p.stem)
+    issues: list[LintIssue] = []
+    fields = ("related_slugs", "conflicts_with_slugs", "supersedes_slugs")
+    for c in concepts:
+        if not isinstance(c, dict):
+            continue
+        src_rel = str(c.get("path", "")).strip() or "meta/wiki_index.json"
+        for field in fields:
+            for target in c.get(field) or []:
+                if not isinstance(target, str) or not target:
+                    continue
+                if target not in slug_set:
+                    issues.append(
+                        LintIssue(
+                            file=src_rel,
+                            line=1,
+                            kind="bad_slug_ref",
+                            target=f"{field}:{target}",
+                            message=(
+                                f"slug reference {target!r} in {field} "
+                                "has no matching concept page"
+                            ),
+                        )
+                    )
+    return issues
+
+
 def lint_markdown_links(
     ctx: VaultContext,
     *,
@@ -197,6 +378,8 @@ def lint_markdown_links(
     include_wikilinks: bool = False,
     include_duplicate_headings: bool = True,
     include_raw: bool = False,
+    include_orphans: bool = False,
+    include_strict_concepts: bool = False,
 ) -> list[LintIssue]:
     """Scan ``wiki/**/*.md`` and optionally ``raw/**/*.md`` for broken refs."""
     issues: list[LintIssue] = []
@@ -238,4 +421,15 @@ def lint_markdown_links(
                         include_duplicate_headings=include_duplicate_headings,
                     )
                 )
+    if include_orphans:
+        issues.extend(
+            lint_wiki_orphans(
+                ctx,
+                include_ephemeral=include_ephemeral,
+                exclude_index_stubs=True,
+                exclude_outputs=True,
+            )
+        )
+    if include_strict_concepts:
+        issues.extend(lint_concept_slug_refs(ctx))
     return issues

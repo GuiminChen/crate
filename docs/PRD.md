@@ -37,6 +37,21 @@
 - 在无垂直验收流程下保证医学/法律等专业场景的合规结论。
 - 1:1 复现某位博主个人的脚本与目录命名。
 
+### 1.3 与《LLM Wiki》模式的对应关系（见 [llm-wiki.md](llm-wiki.md)）
+
+[llm-wiki.md](llm-wiki.md) 将个人知识库抽象为 **三层** 与 **三类操作**。CRATE 的落地如下（英文原文保持抽象；本表为产品映射）。
+
+| LLM Wiki 抽象 | CRATE 中的对应 |
+|--------------|----------------|
+| **Raw sources**（只读源材料） | `raw/**`：`.md` / `.pdf`；编译器不覆盖源文件 |
+| **The wiki**（LLM 维护的互联 Markdown） | `wiki/**`：`compile` 单条笔记、`compile --wiki-graph` 概念页与索引等 |
+| **The schema**（约定与 Agent 纪律） | `AGENTS.md`、`VAULT.md`、仓库内 `prompts/*.md` 与 CLI 路径契约 |
+| **Ingest**（新来源编入 wiki） | `crate compile` / `crate compile --wiki-graph`；`crate watch`（轮询；可选 **`watch --native`** 与 **watchdog**）；**`crate ingest`**（**`.crate/ingest_session.md`** 列出 raw 子集后编译，绕过增量跳过） |
+| **Query**（基于 wiki 问答并落盘） | `crate ask` / `crate ask-multi`；默认 **`wiki/outputs/`**；显式 **`crate wiki promote`** 可将产出提升为 **`wiki/concepts/`** 概念页 |
+| **Lint**（健康检查） | 确定性 **`crate lint`**（含 **`--orphans`**、可选 **`--http-external`**）；**`crate wiki-check`**（LLM 报告；可选 **`--apply` / `--apply-dry-run`** 对白名单 front-matter 补丁） |
+
+**Indexing & logging**（原文中的 index / log）：**`wiki/_index/INDEX.md`**、**`CATALOG.md`**（多页编译）、**`meta/wiki_index.json`**；**`RECENT.md`**（问答回流摘要）、**`LOG.md`**（append-only 活动行；可选 **`CRATE_LOG_MARKDOWN_HEADINGS`** 以贴近「可 grep」的标题行格式）。
+
 ---
 
 ## 2. 愿景与目标
@@ -159,7 +174,7 @@
 
 ### 6.4 可观测性
 
-- 事件：`ingest_`*、`compile_*`、`qa_*`、`lint_*`、`output_*`；可对接 OpenTelemetry（可选）。
+- 结构化日志：关键 CLI 路径通过 **structlog** 输出 `event` 字段（如 `crate_compile_done`）；可对接 OpenTelemetry（可选，非默认依赖）。
 
 ### 6.5 兼容性
 
@@ -221,3 +236,49 @@
 
 - Andrej Karpathy，X 帖： [status 2039805659525644595](https://x.com/karpathy/status/2039805659525644595)
 - [Thread Reader 同串](https://threadreaderapp.com/thread/2039805659525644595.html)
+- Karpathy，《**LLM Wiki**》模式（英文说明，可复制给 Agent）：[llm-wiki.md](llm-wiki.md)
+
+---
+
+## 12. 与《LLM Wiki》模式的对照（[llm-wiki.md](llm-wiki.md)）
+
+[llm-wiki.md](llm-wiki.md) 描述持久 wiki、Raw/Wiki/Schema、Ingest/Query/Lint、index 与 log 等通用模式。下表区分 **已实现对齐**、**部分对齐 / 可选** 与 **非目标或 V2**，便于预期管理（细节以 usage / roadmap 为准）。
+
+### 12.1 已对齐或已提供等价能力
+
+| LLM Wiki 中的概念 | CRATE 实现 |
+|------------------|------------|
+| Raw / Wiki / Schema 分层 | `raw/`、`wiki/`、`AGENTS.md` / `VAULT.md` / `prompts/` |
+| Ingest | `crate compile`、`compile --wiki-graph`、`crate watch`（可选 **`--native`** + **watchdog**） |
+| Query 与落盘 | `crate ask`、`ask-multi`；**`wiki/outputs/`** |
+| 回流与时间线 | **`wiki/_index/RECENT.md`**（ask 摘要链接）、**`wiki/_index/LOG.md`**（append-only；可选 **`CRATE_LOG_MARKDOWN_HEADINGS`**） |
+| Index（目录 + 机器索引） | **`wiki/_index/INDEX.md`**、**`CATALOG.md`**（`--wiki-graph`）、**`meta/wiki_index.json`**；**`meta/wiki_index_extended.json`**（**`crate wiki index-extend`**，仅 `wiki/notes/`） |
+| 互联概念与 backlinks | **`wiki/concepts/`**、**`BACKLINKS.md`**（`related_slugs`）、**`meta/wiki_body_graph.json`** / **`BODYGRAPH.md`**（正文链接图，**`crate wiki graph`**） |
+| raw 是否进入 wiki 的可追溯性 | **`crate report raw-wiki`** → **`meta/raw_wiki_coverage.json`**（启发式） |
+| 矛盾 / 继任的可追踪性（结构化） | 概念页可选 YAML：**`conflicts_with_slugs`**、**`supersedes_slugs`**（由 `--wiki-graph` JSON 产出）；**非**自动裁决全文 |
+| Lint（确定性 + 语义） | **`crate lint`**（含 **`--orphans`**、可选 **`--http-external`**）；**`crate wiki-check`**；可选 **`--apply` / `--apply-dry-run`**（**仅白名单** front-matter 合并于 `wiki/concepts/*.md`） |
+| 显式子集 ingest | **`crate ingest`**（**`.crate/ingest_session.md`** 列出 **`raw/...`**，绕过增量跳过） |
+| 问答进主概念网（显式） | **`crate wiki promote`**：`wiki/outputs/*.md` → `wiki/concepts/<slug>.md`（非默认自动） |
+| 搜索与向量 | **`crate search`**、**`serve-search`**、**`crate index`** + **`search --semantic`** |
+| 幻灯 / 图 | **`crate marp`**、**`wiki/outputs/figures/`** |
+| Dataview | 概念页等含 **YAML**；可用 **`tags`** / **`crate_kind`** 等字段在 Obsidian Dataview 查询（见 usage / obsidian.md） |
+
+### 12.2 部分对齐、可选扩展或非目标
+
+| 主题 | 说明 |
+|------|------|
+| **对话式单源 ingest** | llm-wiki 描述「逐条讨论再写入多页」；CRATE 以 **批量/增量 compile** 为主；**`crate ingest`** 提供「会话文件 → 显式 raw 子集 compile」的薄封装；**非**内置多轮对话编译器。 |
+| **全文录式 index 的粒度** | **`CATALOG.md`** 覆盖 **概念页** 摘录表；**`wiki_index_extended.json`** 覆盖 **`wiki/notes/`**；**非**仓库内每一个 `wiki/**/*.md` 的逐行摘要（可由用户扩展脚本或 Obsidian）。 |
+| **Lint「网页补洞」** | 需外网检索或浏览器；**非**内置；**wiki-check** 可提示调查方向。可选 **`lint --http-external`** 仅对**已有链接**做 HTTP 可达性抽检，**不**替代人工补洞。 |
+| **内嵌 qmd 等混合检索** | [qmd](https://github.com/tobi/qmd) 等由用户**自装**，与 **`crate doctor`** / 搜索并存；**不**随 CRATE 打包。 |
+| **多角色 / 团队实时协同** | PRD **非目标**（§1.2）；**`ask-multi`** 为轻量编排，**非**多租户协作产品。 |
+| **wiki-check 自动修复范围** | **`--apply`** 仅允许预置 **action**（如合并 `related_slugs` / `conflicts_with_slugs`）；**不**接受模型自由覆盖整页正文。 |
+| **合成数据 + 微调** | Karpathy 展望方向；**非** CRATE CLI 范围。 |
+
+### 12.3 文档与路线图
+
+- 操作与 Karpathy 式简表：[usage.md](usage.md) §7.5。
+- 待强化与边界：[roadmap.md](roadmap.md)。
+
+---
+

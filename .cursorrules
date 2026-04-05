@@ -17,8 +17,9 @@ CRATE is a **file-first personal knowledge compiler**: `raw/` captures stay trac
 
 ## When implementing features
 
-- **M0 / M1 focus** is recorded in [.cursor/rules/architecture.md](.cursor/rules/architecture.md) (vault + manual compile POC + minimal lint; then agent Q&A + file outputs + feedback).
-- Read [docs/PRD.md](docs/PRD.md) for scope and priorities; [docs/technical-design.md](docs/technical-design.md) for flows and vault layout.
+- **M0–M3 scope** and cross-cutting commands (`compile --wiki-graph`, `wiki graph`, `report raw-wiki`, `ingest`, `wiki index-extend`, `lint --http-external`, etc.) are summarized in [.cursor/rules/architecture.md](.cursor/rules/architecture.md).
+- Read [docs/PRD.md](docs/PRD.md) for scope and priorities; [docs/technical-design.md](docs/technical-design.md) for flows and vault layout; [docs/providers.md](docs/providers.md) for OpenAI-compatible chat/embedding env (`CRATE_LLM_PROVIDER`, `CRATE_EMBEDDING_*`).
+- Repo entrypoints: [README.md](README.md) (English) · [README.zh.md](README.zh.md) (简体中文).
 - Prefer small, reviewable diffs; extend existing abstractions instead of duplicating vault/path logic.
 
 ## License and dependencies

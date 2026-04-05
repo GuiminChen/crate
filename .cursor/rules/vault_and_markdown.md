@@ -4,7 +4,7 @@
 
 - **`raw/`**: Original captures (notes, papers, clips, images). Do not let the compile/QA pipeline overwrite source files unless an explicit, documented exception exists.
 - **`wiki/`**: Compiled Markdown graph: concepts, notes, `_index` topic pages, `outputs/` for Q&A artifacts.
-- **`meta/`** (optional): Build state, lint reports, compile run metadata (`compile_state.json`, reports).
+- **`meta/`** (optional): Build state and machine-readable artifacts (`compile_state.json`, `wiki_index.json`, `wiki_body_graph.json`, `raw_wiki_coverage.json`, `wiki_index_extended.json`, embeddings DB, lint reports, etc.); see [docs/usage.md](../../docs/usage.md).
 
 ## Front matter
 
@@ -16,6 +16,7 @@
 
 - Support Obsidian wikilinks `[[...]]` and standard Markdown links; normalize in compile tasks (pick one style as primary per vault policy).
 - Lint must validate targets exist where checkable.
+- **`crate lint --orphans`** treats some index/navigation pages as non-orphans by default (e.g. `wiki/_index/INDEX.md`, `TOPICS.md`, `RECENT.md`, `BACKLINKS.md`, `BODYGRAPH.md`, and all of `wiki/outputs/`); see CLI docs — do not “fix” those as false orphan reports.
 
 ## Path and execution safety
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
+from crate.activity_log import append_activity_log
 from crate.vault_paths import VaultContext
 
 __all__ = ["append_output_to_recent"]
@@ -26,4 +27,5 @@ def append_output_to_recent(
     line = f"- {ts} — [{preview}]({output_rel})\n"
     with recent.open("a", encoding="utf-8") as f:
         f.write(line)
+    append_activity_log(ctx, "ask", f"{preview} -> {output_rel}")
     return recent

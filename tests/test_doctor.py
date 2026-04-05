@@ -21,6 +21,9 @@ def test_vault_doctor_report_after_init(tmp_path) -> None:
     assert r["compile_wiki_last_present"] is False
     assert r["semantic_wiki_report_present"] is False
     assert r["embeddings_sqlite_present"] is False
+    assert r["wiki_body_graph_present"] is False
+    assert r["raw_wiki_coverage_present"] is False
+    assert r["wiki_index_extended_present"] is False
     assert r["ok"] is True
 
 

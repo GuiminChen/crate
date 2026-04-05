@@ -1,0 +1,15 @@
+{
+  "name": "obsidian-crate-vault",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "build": "npx esbuild main.ts --bundle --outfile=main.js --external:obsidian --platform=node --format=cjs --target=es2020"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "esbuild": "^0.20.2",
+    "obsidian": "^1.6.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -33,7 +33,7 @@ def _embedding_api_user_message(exc: BaseException) -> str:
         return (
             "Embedding API rejected the credentials (HTTP 401 / invalid key). "
             "Use a key that matches CRATE_EMBEDDING_BASE_URL — do not reuse "
-            "CRATE_DEEPSEEK_API_KEY for Aliyun, OpenAI, or other embedding hosts. "
+            "chat-only keys for Aliyun, OpenAI, or other embedding hosts. "
             "Set CRATE_EMBEDDING_API_KEY (or OPENAI_API_KEY) and "
             "CRATE_EMBEDDING_MODEL to values valid for that provider. "
             f"Original error: {detail}"

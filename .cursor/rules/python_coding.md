@@ -45,3 +45,4 @@ logger.info("compile_started", run_id=run_id, paths=len(paths))
 
 - Prefer typed settings (e.g. Pydantic models) loaded from env with `.env` locally (never committed).
 - Validate configuration at startup.
+- Chat and embedding endpoints are **OpenAI-compatible**; env naming varies by vendor — follow [docs/providers.md](../../docs/providers.md) and existing `src/crate/llm.py` / `embedding_config.py` patterns instead of hard-coding one provider.

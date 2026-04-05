@@ -84,6 +84,12 @@ def test_run_wiki_graph_writes_index_and_concepts(tmp_path: Path) -> None:
     assert "alpha-topic" in hub_text
     assert "meta/wiki_index.json" in hub_text
 
+    catalog = tmp_path / "wiki" / "_index" / "CATALOG.md"
+    assert catalog.is_file()
+    cat_text = catalog.read_text(encoding="utf-8")
+    assert "alpha-topic" in cat_text
+    assert "|" in cat_text
+
     syn = list((tmp_path / "wiki" / "notes").glob("compile-*-wiki.md"))
     assert len(syn) == 1
     assert "Overview" in syn[0].read_text(encoding="utf-8")

@@ -19,6 +19,13 @@ Respond with **only** one JSON object (no markdown outside JSON):
     }
   ],
   "orphan_raw": ["raw/paths/not_in_any_concept_sources.md"],
+  "fixes": [
+    {
+      "action": "merge_related_slugs",
+      "path": "wiki/concepts/example-slug.md",
+      "slugs": ["other-slug"]
+    }
+  ],
   "notes": "optional extra notes"
 }
 ```
@@ -29,3 +36,10 @@ Rules:
 - Flag **duplicate_concept** when titles/slugs suggest the same topic split across pages.
 - Do not invent file paths; only reference paths present in the input.
 - If excerpts are empty, still return valid JSON with brief `summary` and empty arrays.
+
+**fixes** (optional): Only these `action` values are allowed for automated application by `crate wiki-check --apply`:
+
+- `merge_related_slugs` — merge `slugs` into the YAML `related_slugs` list of `path` (must be under `wiki/concepts/`).
+- `merge_conflicts_with_slugs` — merge into `conflicts_with_slugs`.
+
+Only suggest fixes you are confident about; omit `fixes` or use `[]` if unsure.

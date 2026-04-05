@@ -75,15 +75,31 @@ crate init
    crate index
    ```
    再用 `crate search --semantic "…"`；索引文件在 **`meta/embeddings.sqlite`**。
+5. **（可选）** 长期挂机：`crate watch`（安装 **`watchdog`** 后可用 **`--native`** 减少轮询）；多页 wiki 下可对 **`wiki/outputs/`** 中满意答案执行 **`crate wiki promote`** 写入 **`wiki/concepts/`**；需要 LLM 健康报告且接受白名单写回时，用 **`crate wiki-check --apply-dry-run`** / **`--apply`**。
 
-在 Obsidian 里可固定收藏 **`wiki/_index/TOPICS.md`**、**`RECENT.md`**（若使用默认回流）作为入口。
+在 Obsidian 里可固定收藏 **`wiki/_index/TOPICS.md`**、**`RECENT.md`**（若使用默认问答回流）、**`LOG.md`**（机器活动时间线）、**`CATALOG.md`**（多页 wiki 编译后全文录式目录）作为入口。
 
 ---
 
 ## 5. 链接：Wiki 链接 vs 相对路径
 
 - Obsidian 常用 **`[[双链]]`**（wikilink），CRATE 的 **`crate lint`** 主要检查 **Markdown 标准相对路径**（如 `[text](wiki/concepts/foo.md)`）。  
-- 若你**大量使用** `[[...]]` 而不写相对路径，**lint 报断链的情况可能变少或语义不同**——这是预期差异；需要「可脚本校验的链接」时，在关键导航页可兼用相对路径。
+- 若你**大量使用** `[[...]]` 而不写相对路径，**lint 报断链的情况可能变少或语义不同**——这是预期差异；需要「可脚本校验的链接」时，在关键导航页可兼用相对路径。多页 wiki 下可用 **`crate lint --strict-concepts`** 校验概念页 front matter 中的 **`related_slugs`** 等是否指向已存在的 slug。
+
+### 5.1 Dataview 与概念页 YAML（可选）
+
+多页编译后 **`wiki/concepts/*.md`** 的 front matter 含 **`crate_kind: concept`**、**`tags`**、**`related_slugs`**，以及可选 **`conflicts_with_slugs`**、**`supersedes_slugs`**。安装 [Dataview](https://github.com/blacksmithgu/obsidian-dataview) 后可列概念表，例如：
+
+````markdown
+```dataview
+TABLE related_slugs, conflicts_with_slugs
+FROM "wiki/concepts"
+WHERE crate_kind = "concept"
+SORT file.name ASC
+```
+````
+
+**`wiki/_index/LOG.md`** 若设置 **`CRATE_LOG_MARKDOWN_HEADINGS=1`**，活动行以 **`## [YYYY-MM-DD]`** 起头，便于在终端用 `grep '^## \\[20' wiki/_index/LOG.md` 按日筛选（`^` 锚定行首；`\\[` 在基本正则里匹配字面 `[`）（与 [LLM Wiki](llm-wiki.md) 所述 **log.md** 时间线用法一致）。将 **`crate wiki promote`** 产出的概念纳入主网后，可在图谱里与 **`wiki/concepts/`** 一并浏览。
 
 ---
 

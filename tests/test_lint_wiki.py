@@ -97,6 +97,60 @@ def test_lint_duplicate_headings_can_be_disabled(tmp_path: Path) -> None:
     assert lint_markdown_links(ctx, include_duplicate_headings=False) == []
 
 
+def test_lint_orphans_disabled_by_default(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "wiki" / "concepts" / "only.md").write_text("solo\n", encoding="utf-8")
+    assert lint_markdown_links(ctx) == []
+
+
+def test_lint_orphans_reports_page_with_no_inbound(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "wiki" / "concepts" / "a.md").write_text("A\n", encoding="utf-8")
+    (tmp_path / "wiki" / "concepts" / "b.md").write_text("B\n[[a]]\n", encoding="utf-8")
+    issues = lint_markdown_links(ctx, include_wikilinks=True, include_orphans=True)
+    orphans = [i for i in issues if i.kind == "orphan_page"]
+    assert len(orphans) == 1
+    assert orphans[0].file.replace("\\", "/").endswith("wiki/concepts/b.md")
+
+
+def test_lint_orphans_resolved_when_linked(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "wiki" / "concepts" / "a.md").write_text("A\n[[b]]\n", encoding="utf-8")
+    (tmp_path / "wiki" / "concepts" / "b.md").write_text("B\n[[a]]\n", encoding="utf-8")
+    assert (
+        lint_markdown_links(ctx, include_wikilinks=True, include_orphans=True) == []
+    )
+
+
+def test_lint_strict_concepts_bad_slug_ref(tmp_path: Path) -> None:
+    import json
+
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "meta").mkdir(parents=True, exist_ok=True)
+    idx = {
+        "version": 1,
+        "concepts": [
+            {
+                "slug": "a",
+                "path": "wiki/concepts/a.md",
+                "title": "A",
+                "related_slugs": ["missing-slug"],
+            }
+        ],
+    }
+    (tmp_path / "meta" / "wiki_index.json").write_text(
+        json.dumps(idx), encoding="utf-8"
+    )
+    (tmp_path / "wiki" / "concepts" / "a.md").write_text("# A\n", encoding="utf-8")
+    issues = lint_markdown_links(ctx, include_strict_concepts=True)
+    kinds = [i.kind for i in issues]
+    assert "bad_slug_ref" in kinds
+
+
 def test_lint_raw_reports_broken_relative_link(tmp_path: Path) -> None:
     ctx = VaultContext(root=tmp_path)
     init_vault(ctx)

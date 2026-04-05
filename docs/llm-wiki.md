@@ -73,3 +73,9 @@ The idea is related in spirit to Vannevar Bush's Memex (1945) — a personal, cu
 ## Note
 
 This document is intentionally abstract. It describes the idea, not a specific implementation. The exact directory structure, the schema conventions, the page formats, the tooling — all of that will depend on your domain, your preferences, and your LLM of choice. Everything mentioned above is optional and modular — pick what's useful, ignore what isn't. For example: your sources might be text-only, so you don't need image handling at all. Your wiki might be small enough that the index file is all you need, no search engine required. You might not care about slide decks and just want markdown pages. You might want a completely different set of output formats. The right way to use this is to share it with your LLM agent and work together to instantiate a version that fits your needs. The document's only job is to communicate the pattern. Your LLM can figure out the rest.
+
+---
+
+## 与 CRATE 仓库的对照（中文，本仓库维护）
+
+本仓库的 **CRATE** 是上述模式的一种**具体实现**（CLI：`compile` / `ask` / `lint`、`wiki graph`、`report raw-wiki`、`ingest`、`wiki index-extend` 等；模型端为 **OpenAI 兼容** 多平台，见 **[providers.md](providers.md)**）。英文原文保持通用；若需了解 **与本实现的逐条差距、PRD 是否覆盖**，请参阅 **[PRD.md](PRD.md)** 第 **12** 节（含「已对齐 / 差距」表）。简要对用户可见的对照表见 **[usage.md](usage.md)** §7.5。

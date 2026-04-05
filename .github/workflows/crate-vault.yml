@@ -1,0 +1,35 @@
+# Smoke-test: fresh vault + doctor + lint (no API keys).
+# For CI inside a *personal vault* repo, see docs/ci.md (copy-paste template).
+
+name: crate-vault-smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install crate
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Fresh vault
+        run: |
+          set -e
+          d=$(mktemp -d)
+          cd "$d"
+          crate init
+          crate doctor --strict
+          crate lint

@@ -133,6 +133,7 @@ def run_compile(
     *,
     full: bool = False,
     wiki_graph: bool = False,
+    only_paths: list[Path] | None = None,
     client: OpenAI | None = None,
     model: str | None = None,
     config: DeepSeekConfig | None = None,
@@ -148,26 +149,56 @@ def run_compile(
     when nothing changed since last successful compile, returns
     ``CompileResult(None, skipped=True)`` without calling the model.
 
+    If ``only_paths`` is set (e.g. ``crate ingest``), incremental selection is
+    bypassed: only those existing files under ``raw/`` are compiled.
+
     If ``client`` is provided, ``model`` must be provided too. Otherwise uses
     ``client_factory`` (for tests) or ``build_openai_client``.
     """
     ctx.meta_dir().mkdir(parents=True, exist_ok=True)
-    state_data = load_compile_state_dict(ctx)
-    has_state = has_valid_incremental_state(state_data)
-    stored_fp = state_data.get("raw_fingerprints", {})
-    if not isinstance(stored_fp, dict):
-        stored_fp = {}
-
     current_all = collect_raw_sources(ctx)
-    paths, skipped = select_paths_for_compile(
-        ctx.root,
-        current_all,
-        stored_fp,
-        full=full,
-        has_valid_state=has_state,
-    )
-    if skipped:
-        return CompileResult(output_path=None, skipped=True)
+
+    if only_paths is not None:
+        raw_set = {p.resolve() for p in current_all}
+        resolved: list[Path] = []
+        for p in only_paths:
+            if isinstance(p, str):
+                p = Path(p)
+            if not p.is_absolute():
+                p = (ctx.root / p).resolve()
+            try:
+                p = ctx.validate_under_vault(p)
+            except VaultPathError:
+                continue
+            if not p.is_file():
+                continue
+            rel = p.relative_to(ctx.root).as_posix()
+            if not rel.startswith("raw/"):
+                continue
+            if p.resolve() in raw_set:
+                resolved.append(p)
+        paths = sorted(
+            {p.resolve() for p in resolved},
+            key=lambda x: x.relative_to(ctx.root).as_posix(),
+        )
+        if not paths:
+            return CompileResult(output_path=None, skipped=True)
+    else:
+        state_data = load_compile_state_dict(ctx)
+        has_state = has_valid_incremental_state(state_data)
+        stored_fp = state_data.get("raw_fingerprints", {})
+        if not isinstance(stored_fp, dict):
+            stored_fp = {}
+
+        paths, skipped = select_paths_for_compile(
+            ctx.root,
+            current_all,
+            stored_fp,
+            full=full,
+            has_valid_state=has_state,
+        )
+        if skipped:
+            return CompileResult(output_path=None, skipped=True)
 
     assert paths is not None
     eff_max_chars = max_chars_per_file

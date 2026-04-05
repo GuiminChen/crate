@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import threading
 import time
 from typing import Callable
 
@@ -43,15 +44,14 @@ def run_watch_loop(
     poll_interval: float = 0.5,
     quiet_gate: bool = False,
     wiki_graph: bool = False,
+    native_watch: bool = False,
     run_compile_fn: Callable[..., CompileResult] | None = None,
 ) -> None:
     """Block until Ctrl+C; after ``raw/`` changes, debounce then compile.
 
-    Uses polling (no extra dependencies). ``run_compile_fn`` defaults to
-    :func:`run_compile` and is injectable for tests.
-
-    When ``wiki_graph`` is true (and no custom ``run_compile_fn``), calls
-    ``run_compile(..., wiki_graph=True)`` for multi-page wiki output.
+    Uses polling by default. With ``native_watch=True`` and **watchdog** installed,
+    filesystem events wake the loop early (``pip install crate[watch]`` or
+    ``pip install watchdog``).
     """
     if run_compile_fn is not None:
         compile_fn = run_compile_fn
@@ -69,6 +69,35 @@ def run_watch_loop(
     last_compiled: dict[str, dict[str, str]] | None = None
     pending_since: float | None = None
 
+    wake = threading.Event()
+    observer = None
+    if native_watch:
+        try:
+            from watchdog.events import FileSystemEventHandler
+            from watchdog.observers import Observer
+
+            class _RawHandler(FileSystemEventHandler):
+                def on_any_event(self, event: object) -> None:
+                    if getattr(event, "is_directory", False):
+                        return
+                    wake.set()
+
+            raw_dir = ctx.raw_dir()
+            if raw_dir.is_dir():
+                observer = Observer()
+                observer.schedule(_RawHandler(), str(raw_dir), recursive=True)
+                observer.start()
+                print(
+                    "watch: using filesystem events (watchdog).",
+                    file=sys.stderr,
+                )
+        except ImportError:
+            print(
+                "watch: watchdog not installed; use pip install watchdog "
+                "or pip install 'crate[watch]'. Falling back to polling.",
+                file=sys.stderr,
+            )
+
     print(
         f"Watching raw/ under {ctx.root} (debounce={debounce_seconds}s). "
         "Ctrl+C to stop.",
@@ -77,7 +106,11 @@ def run_watch_loop(
 
     try:
         while True:
-            time.sleep(poll_interval)
+            if observer is not None:
+                wake.wait(timeout=poll_interval)
+                wake.clear()
+            else:
+                time.sleep(poll_interval)
             snap = snapshot_raw_fingerprints(ctx)
             if snap != last_snapshot:
                 last_snapshot = snap
@@ -114,3 +147,7 @@ def run_watch_loop(
             pending_since = None
     except KeyboardInterrupt:
         print("watch: stopped.", file=sys.stderr)
+    finally:
+        if observer is not None:
+            observer.stop()
+            observer.join(timeout=3.0)

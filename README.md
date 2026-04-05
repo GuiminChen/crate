@@ -2,6 +2,8 @@
 
 **Compile Raw Archives, Tracked in the vault, into Encyclopedic wiki.**
 
+**Language / 语言：** **English (this file)** | [简体中文](README.zh.md)
+
 CRATE is a **file-first personal knowledge compiler**: ingest messy **raw** captures (notes, papers, clips, repos), keep provenance in your **vault**, and iteratively **compile** them into a navigable **wiki**—with lightweight retrieval, linting, and optional feedback loops back into compilation.
 
 > 中文释义：**CRATE** = 把散落在各处的 **raw**，以 **vault** 为单一事实来源，**增量编译**成可互链的 **wiki**（百科全书式知识库）。
@@ -14,6 +16,8 @@ Design docs below are **in Chinese** (中文).
 
 - **[docs/README.md](docs/README.md)** — 文档索引
 - **[docs/usage.md](docs/usage.md)** — 使用说明（CLI、vault、环境变量、工作流）
+- **[agent-skills/crate-vault/SKILL.md](agent-skills/crate-vault/SKILL.md)** — 通用 Agent Skill（Cursor / Claude Code / 其它）；安装说明见 [docs/agent-skill.md](docs/agent-skill.md)
+- **[docs/providers.md](docs/providers.md)** — 多平台 LLM / 嵌入（DeepSeek、OpenAI、阿里、腾讯、火山、OpenRouter、Azure 等，`CRATE_LLM_PROVIDER`）
 - **[docs/roadmap.md](docs/roadmap.md)** — 路线图与待实现项（含增量编译语义）
 - **[docs/obsidian.md](docs/obsidian.md)** — 与 Obsidian 搭配（库根即 vault、日常流程）
 - **[docs/PRD.md](docs/PRD.md)** — 产品需求与里程碑
@@ -55,6 +59,7 @@ Design inspiration comes from the idea of treating an LLM as a **compiler** over
 ```
 crate/
 ├── README.md
+├── README.zh.md          # Chinese README (简体中文)
 ├── pyproject.toml
 ├── environment.yml        # Conda 环境（可选，与 Anaconda/Miniconda 配合）
 ├── docs/                  # PRD, technical design (see docs/README.md)
@@ -113,13 +118,17 @@ After `pip install -e ".[dev]"`, the `crate` command is available:
 
 ```bash
 crate init [--vault PATH]           # create raw/wiki/meta tree (default vault = cwd)
-crate compile [--vault PATH] [--full|--no-incremental]  # raw/**/*.md + **/*.pdf; default incremental
-crate watch [--vault PATH] [--debounce-seconds SEC]       # poll raw/; auto compile after quiet period
+crate compile [--vault PATH] [--full|--no-incremental] [--wiki-graph]  # raw/**/*.md + **/*.pdf; default incremental
+crate ingest [--vault PATH]         # .crate/ingest_session.md → explicit raw subset compile (bypasses incremental skip)
+crate watch [--vault PATH] [--debounce-seconds SEC] [--wiki-graph]   # poll raw/; auto compile after quiet period
 crate serve-search [--vault PATH] [--port N]              # HTTP GET /search?q=... (JSON; &semantic=1 after crate index)
-crate lint [--vault PATH] [--json] [--wikilinks] [--raw]  # wiki/; --raw includes raw/; optional [[wikilink]]
+crate lint [--vault PATH] [--json] [--wikilinks] [--raw] [--http-external]  # wiki/; optional HTTP reachability for external URLs
+crate wiki graph [--vault PATH]     # meta/wiki_body_graph.json + optional wiki/_index/BODYGRAPH.md
+crate report raw-wiki [--vault PATH]   # meta/raw_wiki_coverage.json (raw → wiki coverage heuristic)
+crate wiki index-extend [--vault PATH] # meta/wiki_index_extended.json (wiki/notes/ titles)
 ```
 
-`compile` calls DeepSeek (`deepseek-chat` at `https://api.deepseek.com` by default); override with `CRATE_DEEPSEEK_BASE_URL` / `CRATE_DEEPSEEK_MODEL` if needed.
+`compile`, `ask`, and `wiki-check` use an **OpenAI-compatible** chat client. Default provider is still **DeepSeek** when its key is set; switch platforms with `CRATE_LLM_PROVIDER` and the per-vendor variables in **[docs/providers.md](docs/providers.md)**.
 
 **M1 — Q&A and feedback**
 
@@ -127,7 +136,7 @@ crate lint [--vault PATH] [--json] [--wikilinks] [--raw]  # wiki/; --raw include
 crate ask [--vault PATH] [--no-feedback] What is in TOPICS?
 ```
 
-`ask` runs a tool loop (`vault_read`, `vault_search`, `vault_search_semantic`, `vault_write_output`) via the same DeepSeek API keys, writes the answer under `wiki/outputs/`, and by default appends one line to `wiki/_index/RECENT.md` (disable with `--no-feedback`). Use `--session <id>` after `crate ephemeral init` to allow drafts under `wiki/_ephemeral/<id>/`.
+`ask` runs a tool loop (`vault_read`, `vault_search`, `vault_search_semantic`, `vault_write_output`) using the **same chat API configuration** as `compile`, writes the answer under `wiki/outputs/`, and by default appends one line to `wiki/_index/RECENT.md` (disable with `--no-feedback`). Use `--session <id>` after `crate ephemeral init` to allow drafts under `wiki/_ephemeral/<id>/`.
 
 **M2 — Search, stats, semantic index**
 

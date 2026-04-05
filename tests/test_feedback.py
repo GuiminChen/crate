@@ -19,3 +19,6 @@ def test_append_creates_and_appends(tmp_path: Path) -> None:
     text = (tmp_path / "wiki" / "_index" / "RECENT.md").read_text(encoding="utf-8")
     assert "wiki/outputs/q.md" in text
     assert "What is X" in text
+    log = (tmp_path / "wiki" / "_index" / "LOG.md").read_text(encoding="utf-8")
+    assert "ask" in log
+    assert "wiki/outputs/q.md" in log

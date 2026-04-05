@@ -1,6 +1,6 @@
 # CRATE 路线图与待实现项
 
-本文档汇总 [PRD.md](PRD.md)、[technical-design.md](technical-design.md) 与产品愿景中**尚未完成或仅部分实现**的能力，便于排期与对齐（例如与 [Karpathy 知识库串](https://x.com/karpathy/status/2039805659525644595) 描述的「raw → 互联 wiki → 问答 → 回流」相比）。
+本文档汇总 [PRD.md](PRD.md)、[technical-design.md](technical-design.md) 与产品愿景中**尚未完成或仅部分实现**的能力，便于排期与对齐（例如与 [Karpathy 知识库串](https://x.com/karpathy/status/2039805659525644595) 描述的「raw → 互联 wiki → 问答 → 回流」相比）。Karpathy 较新的英文模式说明见 [llm-wiki.md](llm-wiki.md)；**与 CRATE 的逐条差距**见 PRD **§12**。
 
 状态说明：**未开始** | **部分**（有 CLI/雏形） | **已有**
 
@@ -11,7 +11,7 @@
 | 项 | PRD / 设计 | 状态 | 说明 |
 |----|-------------|------|------|
 | Raw 入轨（拖入/剪藏约定） | FR-02 | 部分 | 用户自管 `raw/`；无专用剪藏工具 |
-| 入轨监视（`raw/` 变更防抖触发编译） | V1 自动编译 | **部分** | **`crate watch`**（可选 **`--wiki-graph`**）：轮询 + 防抖后调 `compile`；非 OS 级 inotify |
+| 入轨监视（`raw/` 变更防抖触发编译） | V1 自动编译 | **部分** | **`crate watch`**（可选 **`--wiki-graph`**）：默认轮询 + 防抖；安装 **`watchdog`** 时可用 **`--native`**（FSEvents/inotify 类） |
 | 图片与相对路径规范校验 | FR-02 | **部分** | **`crate lint`** / **`lint --raw`**：**`![](path)`** 缺失时 **`broken_image`**；**`crate doctor`** 快速看目录与索引就绪 |
 
 ---
@@ -21,7 +21,7 @@
 | 项 | PRD / 设计 | 状态 | 说明 |
 |----|-------------|------|------|
 | 增量编译（仅变更 raw） | FR-03 | **部分** | `crate compile` 默认增量；`--full` / `--no-incremental` 全量；指纹为 **SHA-256**（`meta/compile_state.json` v2） |
-| 互联 wiki：概念页、backlinks、主题分层 | MVP 编译 | **部分** | **`crate compile --wiki-graph`**：`wiki/concepts/` + `meta/wiki_index.json` + **`wiki/_index/BACKLINKS.md`**（`related_slugs`）+ **`meta/compile_wiki_last.json`**；正文内全量 wikilink 图谱仍可增强 |
+| 互联 wiki：概念页、backlinks、主题分层 | MVP 编译 | **部分** | **`crate compile --wiki-graph`**：概念 YAML 含 **`related_slugs`**、可选 **`conflicts_with_slugs`** / **`supersedes_slugs`**；**`BACKLINKS.md`**、**`CATALOG.md`**；正文链接图：**`crate wiki graph`** → **`meta/wiki_body_graph.json`** / 可选 **`BODYGRAPH.md`**（与 BACKLINKS 的 YAML 边互补） |
 | 全库索引页（`INDEX.md` / TOPICS 机器可依赖） | FR-04 | **已有** | **`wiki/_index/INDEX.md`**（**`compile --wiki-graph`** 更新）；**`meta/wiki_index.json`**；**`TOPICS.md`** 可由 **`topics_markdown`** 同步；分层主题树仍可由你手工维护 |
 | 编译幂等、原子写 | technical-design | **已有** | 主要 Markdown 产出（**`compile`**、**`compile --wiki-graph`**、**`wiki normalize`** 等）先写 **`*.md.tmp`** 再 **`os.replace`** |
 
@@ -36,7 +36,7 @@
 | 向量 / 语义检索 | V1 检索分层 | 已有 | `crate index` + `search --semantic` |
 | 朴素搜索 HTTP 服务 | V1 | **已有** | **`crate serve-search`**：**`/search`**（字面量 / **`semantic=1`**）；**`/health`** 返回 **vault**、**`semantic_ready`**、**`multi_page_wiki_index`** 等 |
 | 规模门闸 | FR-10 | 已有 | **`crate stats`** / **`--strict`** / **`--gates-json`**；**`--json`** 另含 **`readiness`**（与 **`serve-search`** **`/health`** 同字段，便于无 HTTP 探测） |
-| 环境自检（无 LLM） | — | **已有** | **`crate doctor`**：**`crate_version`**、**`dirs`**、**`compile_state` / `compile_wiki_last`**、**`semantic_wiki_report`**、**`embeddings_sqlite`**、**`readiness`**；**`--strict`** 缺标准目录时退出 **1** |
+| 环境自检（无 LLM） | — | **已有** | **`crate doctor`**：**`crate_version`**、**`dirs`**、**`compile_state` / `compile_wiki_last`**、**`semantic_wiki_report`**、**`embeddings_sqlite`**、**`wiki_body_graph` / `raw_wiki_coverage` / `wiki_index_extended`** 文件标记、**`readiness`**；**`--strict`** 缺标准目录时退出 **1** |
 
 ---
 
@@ -44,8 +44,8 @@
 
 | 项 | PRD / 设计 | 状态 | 说明 |
 |----|-------------|------|------|
-| 断链检查 | FR-08 | **部分** | **`crate lint`**：**`wiki/`**；**`--raw`** 时含 **`raw/`**；相对 **`[](path)`** / **`![](path)`**；**`--wikilinks`**；**`duplicate_heading`**（可 **`--no-duplicate-headings`**）；raw↔wiki 语义对齐仍靠编译与 **`wiki-check`** |
-| LLM 语义巡检、孤立 raw、摘要冲突 | FR-08 | **部分** | **`crate wiki-check`**：读 `wiki_index.json` + 抽样页，结构化 JSON 报告（**不写回**）；**`--apply`** 类自动修复未做 |
+| 断链检查 | FR-08 | **部分** | **`crate lint`**：**`wiki/`**；**`--raw`** 时含 **`raw/`**；相对 **`[](path)`** / **`![](path)`**；**`--wikilinks`**；**`--orphans`**（入链图上的 **wiki 孤立页**）；**`--http-external`**（外链 HTTP 抽检；**`SKIP_HTTP_LINT`**）；**`duplicate_heading`**（可 **`--no-duplicate-headings`**）；raw↔wiki 语义对齐仍靠编译、**`report raw-wiki`** 与 **`wiki-check`** |
+| LLM 语义巡检、孤立 raw、摘要冲突 | FR-08 | **部分** | **`crate wiki-check`**：JSON 报告；可选 **`--apply-dry-run`** / **`--apply`**（**仅白名单**合并 `wiki/concepts/*.md` 内 `related_slugs` / `conflicts_with_slugs`）；复杂语义仍靠人工 |
 | Obsidian wikilink 与标准链接互转 | PRD 6.5 | **部分** | **`crate lint --wikilinks`** 校验；**`crate wiki normalize`** 批量 **`--to-md-links` / `--to-wikilinks`** |
 
 ---
@@ -64,9 +64,10 @@
 
 | 项 | PRD / 设计 | 状态 | 说明 |
 |----|-------------|------|------|
-| 回流与 front-matter | FR-07 | 部分 | `RECENT.md` 等 |
-| Token 预算 / 模型路由 | FR-11 | **部分** | **`CRATE_COMPILE_MAX_CHARS_PER_FILE`**；**`CRATE_MODEL_*`** 分任务；**`CRATE_MAX_OUTPUT_TOKENS*`**；**`CRATE_MAX_INPUT_CHARS*`** 输入硬截断 |
+| 回流与 front-matter | FR-07 | **部分** | **`RECENT.md`**、**`LOG.md`**（可选标题行格式 **`CRATE_LOG_MARKDOWN_HEADINGS`**）；**`crate wiki promote`** 将 **`wiki/outputs/`** 显式提升为 **`wiki/concepts/`**；详见 [usage.md](usage.md) |
+| Token 预算 / 模型路由 | FR-11 | **部分** | [usage.md](usage.md) **§3.1** 矩阵；**`CRATE_COMPILE_MAX_CHARS_PER_FILE`**；**`CRATE_MODEL_*`**；**`CRATE_MAX_OUTPUT_TOKENS*`**；**`CRATE_MAX_INPUT_CHARS*`** |
 | 短命 wiki 编排、多 Agent | V2 / Karpathy 二推 | **部分** | **`ephemeral` + `ask --session`**；**`crate ask-multi`**（规划 JSON + `ask` 工具循环）；深度多角色编排仍可增强 |
+| 显式 ingest、CI、Agent Skill、Obsidian 插件 | — | **部分** | **`crate ingest`**（**`.crate/ingest_session.md`**）；[ci.md](ci.md) workflow 模板；[agent-skills/crate-vault/SKILL.md](../agent-skills/crate-vault/SKILL.md)；[obsidian-plugin/](../obsidian-plugin/crate/) |
 | 合成数据 + 微调 | Karpathy 展望 | 未开始 | 非本期 |
 
 ---

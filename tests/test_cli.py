@@ -10,6 +10,15 @@ def test_cli_init_and_lint(tmp_path: Path) -> None:
     assert main(["--vault", str(tmp_path), "lint"]) == 0
 
 
+def test_cli_wiki_graph_and_report_raw_wiki(tmp_path: Path) -> None:
+    assert main(["--vault", str(tmp_path), "init"]) == 0
+    assert main(["--vault", str(tmp_path), "wiki", "graph"]) == 0
+    assert (tmp_path / "meta" / "wiki_body_graph.json").is_file()
+    assert main(["--vault", str(tmp_path), "report", "raw-wiki"]) == 0
+    assert main(["--vault", str(tmp_path), "wiki", "index-extend"]) == 0
+    assert (tmp_path / "meta" / "wiki_index_extended.json").is_file()
+
+
 def test_parse_watch_wiki_graph() -> None:
     p = build_parser()
     a = p.parse_args(["watch", "--wiki-graph"])

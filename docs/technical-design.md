@@ -73,16 +73,24 @@ vault/
   wiki/                   # LLM 编译区
     _index/
       TOPICS.md           # 主题入口
-      RECENT.md           # 最近变更
+      RECENT.md           # 最近变更（ask 回流）
+      LOG.md              # append-only 活动时间线（可选钩子）
+      CATALOG.md          # 全文录式目录（--wiki-graph 且有概念页时生成）
     concepts/             # 概念词条
     notes/                # 长文/综述
     outputs/              # 问答产出（可回流）
   meta/                   # 可选：构建状态
     compile_state.json
     wiki_index.json       # 多页编译（--wiki-graph）机器可读索引
+    wiki_body_graph.json  # 正文内 wikilink 有向图（crate wiki graph）
+    raw_wiki_coverage.json  # raw→wiki 覆盖扫描（crate report raw-wiki）
+    wiki_index_extended.json  # wiki/notes/ 标题索引（crate wiki index-extend）
+    embeddings.sqlite     # 向量块（crate index）
     lint_last_report.md
   AGENTS.md               # 可选：面向编码 Agent 的项目说明
 ```
+
+**聊天与嵌入**：`compile` / `ask` / `wiki-check` 与 **`crate index`** 分别使用 **OpenAI 兼容** 的 HTTPS 客户端；服务商、密钥与模型名见 **[providers.md](providers.md)**（`CRATE_LLM_PROVIDER`、`CRATE_EMBEDDING_*` 等）。
 
 ### 3.2 Markdown Front-matter（约定）
 
@@ -137,6 +145,14 @@ model: "..."   # 可选
 4. **提交**：原子写（先 `*.tmp` 再 `rename`）；更新 `meta/compile_state.json`。
 5. **索引更新**：刷新 `TOPICS.md` / 反向链接表（可由第二步合并或单独轻量任务）。
 
+**CRATE 实现（增量语义，与 roadmap §7 一致）**
+
+- `meta/compile_state.json` **v2**：`raw_fingerprints` 记录每个 `raw/**` 下 `.md`/`.pdf` 文件内容的 **SHA-256**（非 mtime）。
+- **默认增量**：若存在有效 v2 状态，且当前 raw 集合与指纹相比**无新增、无删除、无内容变更**，则**不调模型**、不写新笔记（跳过）。
+- **仅新增或修改**：只把**变更过的** raw 文件内容拼进提示（子集编译）。
+- **删除 raw**：状态中仍记有已删路径；磁盘上已不存在该文件时，视为库收缩，**用当前全部剩余 raw** 作为一次编译输入并刷新指纹（避免 wiki 仍综述已删材料）。
+- **全量**：`--full` / `--no-incremental`，或尚无有效 v2 状态时，使用**当前全部** raw。
+
 **失败与回滚**：保留上一版 `compile_run_id`；失败不写半篇。
 
 **多页 wiki（`compile --wiki-graph`）**
@@ -170,8 +186,9 @@ model: "..."   # 可选
 **确定性规则（不调用模型）**
 
 - 断链：`[[...]]` 与 markdown 链接目标存在性
-- 孤儿：`wiki` 页无 `sources` 且不在白名单
-- `raw` 未引用：超过 N 天（可配）
+- **入链孤儿**（`crate lint --orphans`）：在 `wiki/**/*.md` 上由正文内 Markdown 链接与 wikilink（**跳过** fenced code）构建有向图；报告**没有任何其他 wiki 页指向**的页面。默认排除 `wiki/_index/INDEX.md`、`TOPICS.md`、`RECENT.md`、`BACKLINKS.md`、`BODYGRAPH.md` 与整个 `wiki/outputs/`（导航/产出区）；**`--include-ephemeral`** 时含 `wiki/_ephemeral/**`。
+- **外链 HTTP**（可选）：**`lint --http-external`** 对正文中的 `http(s)://` 做可达性抽检；可用 **`SKIP_HTTP_LINT`** 等在 CI 中跳过。
+- （规划中）`raw` 未被任何概念页 `sources` 引用等规则可另行配置
 
 **LLM 增强（可选、贵）**
 
@@ -181,7 +198,7 @@ model: "..."   # 可选
 ### 4.4 回流
 
 - `wiki/outputs/**` 默认 **不**自动并入 `concepts/`；提供命令 `promote_output_to_note` 由用户或 Agent 显式执行。
-- 自动回流（若开启）：仅添加 `RECENT.md` 与索引一行链接，避免污染概念树。
+- **人类可读**：`ask` 默认在 `wiki/_index/RECENT.md` 追加一行指向问答产出；**append-only 时间线**另写入 `wiki/_index/LOG.md`（`compile` / `ask` 回流 / `wiki-check` 成功时各一行，可用 `CRATE_NO_ACTIVITY_LOG=1` 关闭）。
 
 ---
 

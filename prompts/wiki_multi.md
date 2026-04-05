@@ -13,11 +13,18 @@ You receive excerpts from `raw/` (markdown and PDF text). Respond with **only** 
       "title": "Human Title",
       "body": "markdown body with ## headings and optional [[other-slug]] links",
       "related_slugs": ["other-slug"],
+      "conflicts_with_slugs": ["slug-that-contradicts"],
+      "supersedes_slugs": ["older-slug"],
       "sources": ["raw/papers/example.md"]
     }
   ]
 }
 ```
+
+Optional fields:
+
+- `conflicts_with_slugs`: other concept slugs whose claims conflict with this page (best-effort; only when supported by excerpts).
+- `supersedes_slugs`: other concept slugs this page replaces or subsumes (best-effort).
 
 Rules:
 

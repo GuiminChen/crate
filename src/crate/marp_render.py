@@ -12,6 +12,7 @@ from crate.vault_paths import VaultContext, VaultPathError
 
 __all__ = ["find_marp_files", "run_marp", "ensure_figures_dir"]
 
+
 def _has_marp_front_matter(text: str) -> bool:
     if not text.startswith("---"):
         return False
@@ -19,7 +20,8 @@ def _has_marp_front_matter(text: str) -> bool:
     if end == -1:
         return False
     block = text[3:end]
-    return re.search(r"^marp\s*:\s*true\s*$", block, re.MULTILINE | re.IGNORECASE) is not None
+    pat = r"^marp\s*:\s*true\s*$"
+    return re.search(pat, block, re.MULTILINE | re.IGNORECASE) is not None
 
 
 def ensure_figures_dir(ctx: VaultContext) -> Path:

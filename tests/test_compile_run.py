@@ -120,6 +120,30 @@ def test_run_compile_incremental_skips_second_run(tmp_path: Path) -> None:
     client.chat.completions.create.assert_called_once()
 
 
+def test_run_compile_only_paths_bypasses_incremental_skip(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    a = tmp_path / "raw" / "a.md"
+    b = tmp_path / "raw" / "b.md"
+    a.write_text("# A\n", encoding="utf-8")
+    b.write_text("# B\n", encoding="utf-8")
+
+    client = MagicMock()
+    client.chat.completions.create.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content="## Body"))]
+    )
+
+    def factory() -> tuple[MagicMock, str]:
+        return client, "fake-model"
+
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+    run_compile(ctx, only_paths=[a], client_factory=factory)
+    assert client.chat.completions.create.call_count == 2
+
+
 def test_run_compile_full_after_skip_calls_again(tmp_path: Path) -> None:
     ctx = VaultContext(root=tmp_path)
     init_vault(ctx)
@@ -202,7 +226,44 @@ def test_run_compile_incremental_on_edit(tmp_path: Path) -> None:
 
 
 def test_load_deepseek_config_requires_key(monkeypatch: "pytest.MonkeyPatch") -> None:
-    monkeypatch.delenv("CRATE_DEEPSEEK_API_KEY", raising=False)
-    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
-    with pytest.raises(ValueError, match="CRATE_DEEPSEEK_API_KEY"):
+    for name in (
+        "CRATE_LLM_PROVIDER",
+        "CRATE_DEEPSEEK_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "CRATE_CHAT_API_KEY",
+        "OPENAI_API_KEY",
+        "CRATE_OPENAI_API_KEY",
+        "CRATE_DASHSCOPE_API_KEY",
+        "DASHSCOPE_API_KEY",
+        "CRATE_ARK_API_KEY",
+        "ARK_API_KEY",
+        "CRATE_HUNYUAN_API_KEY",
+        "HUNYUAN_API_KEY",
+        "CRATE_OPENROUTER_API_KEY",
+        "OPENROUTER_API_KEY",
+        "AZURE_OPENAI_API_KEY",
+        "CRATE_AZURE_OPENAI_API_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(ValueError, match="No chat API key"):
+        load_deepseek_config()
+
+
+def test_load_deepseek_config_openai_auto(monkeypatch: "pytest.MonkeyPatch") -> None:
+    for name in (
+        "CRATE_DEEPSEEK_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "CRATE_LLM_PROVIDER",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-openai")
+    cfg = load_deepseek_config()
+    assert "api.openai.com" in cfg.base_url
+    assert cfg.model
+
+
+def test_load_deepseek_config_unknown_provider(monkeypatch: "pytest.MonkeyPatch") -> None:
+    monkeypatch.setenv("CRATE_LLM_PROVIDER", "not-a-real-provider")
+    monkeypatch.setenv("CRATE_DEEPSEEK_API_KEY", "x")
+    with pytest.raises(ValueError, match="Unknown CRATE_LLM_PROVIDER"):
         load_deepseek_config()
