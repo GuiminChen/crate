@@ -122,8 +122,7 @@ def run_semantic_wiki_check(
 
     system = (
         "You are a careful wiki auditor. Follow the instructions exactly. "
-        "Output valid JSON only.\n\n"
-        + instructions
+        "Output valid JSON only.\n\n" + instructions
     )
 
     if client_factory is not None:

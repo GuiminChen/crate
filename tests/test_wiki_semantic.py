@@ -16,7 +16,9 @@ def test_semantic_wiki_check_writes_report(tmp_path: Path) -> None:
     idx = {
         "version": 1,
         "raw_sources": ["raw/a.md"],
-        "concepts": [{"slug": "x", "path": "wiki/concepts/x.md", "title": "X", "sources": []}],
+        "concepts": [
+            {"slug": "x", "path": "wiki/concepts/x.md", "title": "X", "sources": []}
+        ],
     }
     (tmp_path / "meta" / "wiki_index.json").write_text(
         json.dumps(idx), encoding="utf-8"

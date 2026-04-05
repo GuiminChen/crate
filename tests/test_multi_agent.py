@@ -34,9 +34,7 @@ def test_multi_agent_planner_then_run_qa(
 
     seen: dict[str, str] = {}
 
-    def run_qa_capture(
-        c: VaultContext, q: str, **kwargs: object
-    ) -> Path:
+    def run_qa_capture(c: VaultContext, q: str, **kwargs: object) -> Path:
         seen["q"] = q
         return out
 

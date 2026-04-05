@@ -263,9 +263,7 @@ def semantic_search_hits(
 
     conn = sqlite3.connect(str(db_path))
     try:
-        cur = conn.execute(
-            "SELECT path, line_start, text, emb FROM chunks"
-        )
+        cur = conn.execute("SELECT path, line_start, text, emb FROM chunks")
         scored: list[tuple[float, str, int, str]] = []
         for path, line_start, text, emb_blob in cur.fetchall():
             v = _unpack_embedding(emb_blob)

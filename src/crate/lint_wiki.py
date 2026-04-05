@@ -88,9 +88,7 @@ def iter_wiki_outgoing_edges(path: Path, ctx: VaultContext) -> list[WikiOutgoing
                     continue
                 rel = resolved.relative_to(ctx.root).as_posix()
                 if rel.startswith("wiki/"):
-                    out.append(
-                        WikiOutgoingEdge(line=i, kind="md_link", target_rel=rel)
-                    )
+                    out.append(WikiOutgoingEdge(line=i, kind="md_link", target_rel=rel))
         for m in _WIKI_LINK_RE.finditer(line):
             if m.start() > 0 and line[m.start() - 1] == "!":
                 continue

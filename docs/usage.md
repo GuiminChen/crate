@@ -2,7 +2,7 @@
 
 面向 **已克隆仓库并完成安装** 的用户：如何初始化 vault、调用 CLI、配置密钥，以及理解各命令的输入与产出。架构与里程碑见 [technical-design.md](technical-design.md)、[PRD.md](PRD.md)。
 
-与 [Andrej Karpathy](https://x.com/karpathy) 在 X 上讨论的「个人知识库 / 互联 wiki」思路的对照，见下文 **[Karpathy-style comparison](#karpathy-style-comparison)**（§7.5）。
+与 Karpathy **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)**（[X 上相关讨论](https://x.com/karpathy/status/2039805659525644595)）中的「个人知识库 / 互联 wiki」思路的对照，见下文 **[Karpathy-style comparison](#karpathy-style-comparison)**（§7.5）。
 
 ---
 
@@ -464,7 +464,7 @@ crate ask 根据搜索结果，总结 concept 相关链接指向哪些文件？
 
 #### Karpathy-style comparison
 
-[Karpathy 在 X 上的讨论](https://x.com/karpathy/status/2039805659525644595)（及后续帖）强调一种**个人知识库**形态：材料先进 **`raw/` 式沉淀**，再经编译成**可互联的 wiki**，问答与回流形成闭环。较新的英文长文 **[LLM Wiki](llm-wiki.md)** 描述了「持久 wiki、ingest/query/lint、index/log」等通用模式；**与 CRATE / PRD 的逐条差距**见 [PRD.md](PRD.md) **§12**。下表为 **能力映射简表**（非一一产品对标）。
+Karpathy 的 **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)**（仓库副本：[llm-wiki.md](llm-wiki.md)）与 [X 帖串](https://x.com/karpathy/status/2039805659525644595)强调一种**个人知识库**形态：材料先进 **`raw/` 式沉淀**，再经编译成**可互联的 wiki**，问答与回流形成闭环。**与 CRATE / PRD 的逐条差距**见 [PRD.md](PRD.md) **§12**。下表为 **能力映射简表**（非一一产品对标）。
 
 **术语速查（LLM Wiki → CRATE）**：原文 **index.md**（全文录式目录）≈ **`CATALOG.md`**（概念表）+ **`INDEX.md`**（hub）；**log.md**（append-only 时间线）≈ **`wiki/_index/LOG.md`**（可选 **`CRATE_LOG_MARKDOWN_HEADINGS=1`** 以 `## [日期]` 起行，便于 `grep`）。
 

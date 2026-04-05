@@ -222,9 +222,7 @@ def run_compile(
             client_factory=client_factory,
         )
 
-    user_content = build_compile_prompt(
-        ctx, paths, max_chars_per_file=eff_max_chars
-    )
+    user_content = build_compile_prompt(ctx, paths, max_chars_per_file=eff_max_chars)
     user_content = truncate_prompt_for_purpose(user_content, "compile")
     system = (
         "You are a CRATE wiki compiler. Given raw markdown and (where provided) "
@@ -290,7 +288,5 @@ created: {datetime.now(timezone.utc).isoformat()}
     tmp.write_text(full_body, encoding="utf-8")
     os.replace(tmp, out)
 
-    merge_save_raw_fingerprints(
-        ctx, fingerprints_for_paths(current_all, ctx.root)
-    )
+    merge_save_raw_fingerprints(ctx, fingerprints_for_paths(current_all, ctx.root))
     return CompileResult(output_path=out, skipped=False)

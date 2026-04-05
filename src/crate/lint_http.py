@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from crate.lint_wiki import LintIssue
 from crate.vault_paths import VaultContext, VaultPathError
 
@@ -20,7 +21,7 @@ def _http_check_one(url: str, timeout: float) -> tuple[bool, str]:
 
     req = Request(
         url,
-        headers={"User-Agent": "crate-lint/1.0 (+https://github.com/crate)"},
+        headers={"User-Agent": "crate-lint/1.0 (+https://github.com/GuiminChen/crate)"},
         method="HEAD",
     )
     try:
@@ -33,7 +34,9 @@ def _http_check_one(url: str, timeout: float) -> tuple[bool, str]:
         if e.code == 405:
             req_g = Request(
                 url,
-                headers={"User-Agent": "crate-lint/1.0 (+https://github.com/crate)"},
+                headers={
+                    "User-Agent": "crate-lint/1.0 (+https://github.com/GuiminChen/crate)"
+                },
                 method="GET",
             )
             try:

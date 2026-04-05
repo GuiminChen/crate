@@ -6,10 +6,7 @@ import os
 import re
 from pathlib import Path
 
-from crate.lint_wiki import (
-    _resolve_link_target,
-    resolve_wikilink_first_existing,
-)
+from crate.lint_wiki import _resolve_link_target, resolve_wikilink_first_existing
 from crate.vault_paths import VaultContext, VaultPathError
 
 __all__ = ["normalize_wiki_markdown"]

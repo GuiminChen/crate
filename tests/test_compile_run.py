@@ -262,7 +262,9 @@ def test_load_deepseek_config_openai_auto(monkeypatch: "pytest.MonkeyPatch") -> 
     assert cfg.model
 
 
-def test_load_deepseek_config_unknown_provider(monkeypatch: "pytest.MonkeyPatch") -> None:
+def test_load_deepseek_config_unknown_provider(
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
     monkeypatch.setenv("CRATE_LLM_PROVIDER", "not-a-real-provider")
     monkeypatch.setenv("CRATE_DEEPSEEK_API_KEY", "x")
     with pytest.raises(ValueError, match="Unknown CRATE_LLM_PROVIDER"):

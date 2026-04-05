@@ -14,9 +14,7 @@ def test_build_wiki_body_graph_edges(tmp_path) -> None:
     b.write_text("x\n", encoding="utf-8")
     g = build_wiki_body_graph(ctx)
     assert g["version"] == 1
-    assert any(
-        e["from"] == "wiki/a.md" and e["to"] == "wiki/b.md" for e in g["edges"]
-    )
+    assert any(e["from"] == "wiki/a.md" and e["to"] == "wiki/b.md" for e in g["edges"])
 
 
 def test_write_wiki_body_graph_writes_json(tmp_path) -> None:

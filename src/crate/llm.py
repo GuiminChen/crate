@@ -109,9 +109,9 @@ _CHAT_PRESETS: dict[str, dict[str, Any]] = {
     },
 }
 
-LLM_PROVIDER_IDS = tuple(
-    sorted(k for k in _CHAT_PRESETS if k != "custom")
-) + ("custom",)
+LLM_PROVIDER_IDS = tuple(sorted(k for k in _CHAT_PRESETS if k != "custom")) + (
+    "custom",
+)
 
 
 def _first_nonempty_env(names: tuple[str, ...]) -> str:

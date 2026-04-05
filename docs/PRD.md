@@ -37,7 +37,7 @@
 - 在无垂直验收流程下保证医学/法律等专业场景的合规结论。
 - 1:1 复现某位博主个人的脚本与目录命名。
 
-### 1.3 与《LLM Wiki》模式的对应关系（见 [llm-wiki.md](llm-wiki.md)）
+### 1.3 与《LLM Wiki》模式的对应关系（见 [Karpathy Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)；仓库副本 [llm-wiki.md](llm-wiki.md)）
 
 [llm-wiki.md](llm-wiki.md) 将个人知识库抽象为 **三层** 与 **三类操作**。CRATE 的落地如下（英文原文保持抽象；本表为产品映射）。
 
@@ -234,15 +234,16 @@
 
 ## 11. 参考文献（灵感来源）
 
-- Andrej Karpathy，X 帖： [status 2039805659525644595](https://x.com/karpathy/status/2039805659525644595)
+- Karpathy，《**LLM Wiki**》模式（**Gist 正文**）：[gist.github.com/karpathy/442a6bf555914893e9891c11519de94f](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+- Andrej Karpathy，X 帖（较早讨论）： [status 2039805659525644595](https://x.com/karpathy/status/2039805659525644595)
 - [Thread Reader 同串](https://threadreaderapp.com/thread/2039805659525644595.html)
-- Karpathy，《**LLM Wiki**》模式（英文说明，可复制给 Agent）：[llm-wiki.md](llm-wiki.md)
+- 本仓库副本（便于离线）：[llm-wiki.md](llm-wiki.md)
 
 ---
 
-## 12. 与《LLM Wiki》模式的对照（[llm-wiki.md](llm-wiki.md)）
+## 12. 与《LLM Wiki》模式的对照（[Gist 正文](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)；[llm-wiki.md](llm-wiki.md)）
 
-[llm-wiki.md](llm-wiki.md) 描述持久 wiki、Raw/Wiki/Schema、Ingest/Query/Lint、index 与 log 等通用模式。下表区分 **已实现对齐**、**部分对齐 / 可选** 与 **非目标或 V2**，便于预期管理（细节以 usage / roadmap 为准）。
+[llm-wiki.md](llm-wiki.md) 描述持久 wiki、Raw/Wiki/Schema、Ingest/Query/Lint、index 与 log 等通用模式（与 Gist 同步维护时以 Gist 为准）。下表区分 **已实现对齐**、**部分对齐 / 可选** 与 **非目标或 V2**，便于预期管理（细节以 usage / roadmap 为准）。
 
 ### 12.1 已对齐或已提供等价能力
 
@@ -281,4 +282,3 @@
 - 待强化与边界：[roadmap.md](roadmap.md)。
 
 ---
-

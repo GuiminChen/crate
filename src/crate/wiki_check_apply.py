@@ -36,9 +36,7 @@ def _split_front_matter(text: str) -> tuple[dict[str, Any], str] | None:
     return data, body
 
 
-def _merge_slug_field(
-    data: dict[str, Any], key: str, slugs: list[str]
-) -> None:
+def _merge_slug_field(data: dict[str, Any], key: str, slugs: list[str]) -> None:
     cur = data.get(key)
     if not isinstance(cur, list):
         cur = []

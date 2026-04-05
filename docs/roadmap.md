@@ -1,6 +1,6 @@
 # CRATE 路线图与待实现项
 
-本文档汇总 [PRD.md](PRD.md)、[technical-design.md](technical-design.md) 与产品愿景中**尚未完成或仅部分实现**的能力，便于排期与对齐（例如与 [Karpathy 知识库串](https://x.com/karpathy/status/2039805659525644595) 描述的「raw → 互联 wiki → 问答 → 回流」相比）。Karpathy 较新的英文模式说明见 [llm-wiki.md](llm-wiki.md)；**与 CRATE 的逐条差距**见 PRD **§12**。
+本文档汇总 [PRD.md](PRD.md)、[technical-design.md](technical-design.md) 与产品愿景中**尚未完成或仅部分实现**的能力，便于排期与对齐（例如与 Karpathy [LLM Wiki（Gist）](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 及 [X 知识库串](https://x.com/karpathy/status/2039805659525644595) 描述的「raw → 互联 wiki → 问答 → 回流」相比）。模式说明正文以 Gist 为准；仓库副本见 [llm-wiki.md](llm-wiki.md)；**与 CRATE 的逐条差距**见 PRD **§12**。
 
 状态说明：**未开始** | **部分**（有 CLI/雏形） | **已有**
 

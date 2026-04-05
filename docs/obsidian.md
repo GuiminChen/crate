@@ -65,7 +65,7 @@ crate init
    crate compile --full       # 需要时对全部 raw 重编一版（与 --no-incremental 等价）
    ```
    阅读 **`wiki/notes/`** 下新生成的编译笔记；可在 Obsidian 图谱里打开相关文件。详见 [usage.md](usage.md) 第 5.2 节与 **7.1b**。
-3. **问答**：  
+3. **问答**：
    ```bash
    crate ask 根据 raw 里关于 X 的材料，总结三个要点
    ```
@@ -83,7 +83,7 @@ crate init
 
 ## 5. 链接：Wiki 链接 vs 相对路径
 
-- Obsidian 常用 **`[[双链]]`**（wikilink），CRATE 的 **`crate lint`** 主要检查 **Markdown 标准相对路径**（如 `[text](wiki/concepts/foo.md)`）。  
+- Obsidian 常用 **`[[双链]]`**（wikilink），CRATE 的 **`crate lint`** 主要检查 **Markdown 标准相对路径**（如 `[text](wiki/concepts/foo.md)`）。
 - 若你**大量使用** `[[...]]` 而不写相对路径，**lint 报断链的情况可能变少或语义不同**——这是预期差异；需要「可脚本校验的链接」时，在关键导航页可兼用相对路径。多页 wiki 下可用 **`crate lint --strict-concepts`** 校验概念页 front matter 中的 **`related_slugs`** 等是否指向已存在的 slug。
 
 ### 5.1 Dataview 与概念页 YAML（可选）
@@ -99,7 +99,7 @@ SORT file.name ASC
 ```
 ````
 
-**`wiki/_index/LOG.md`** 若设置 **`CRATE_LOG_MARKDOWN_HEADINGS=1`**，活动行以 **`## [YYYY-MM-DD]`** 起头，便于在终端用 `grep '^## \\[20' wiki/_index/LOG.md` 按日筛选（`^` 锚定行首；`\\[` 在基本正则里匹配字面 `[`）（与 [LLM Wiki](llm-wiki.md) 所述 **log.md** 时间线用法一致）。将 **`crate wiki promote`** 产出的概念纳入主网后，可在图谱里与 **`wiki/concepts/`** 一并浏览。
+**`wiki/_index/LOG.md`** 若设置 **`CRATE_LOG_MARKDOWN_HEADINGS=1`**，活动行以 **`## [YYYY-MM-DD]`** 起头，便于在终端用 `grep '^## \\[20' wiki/_index/LOG.md` 按日筛选（`^` 锚定行首；`\\[` 在基本正则里匹配字面 `[`）（与 Karpathy [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) / [llm-wiki.md](llm-wiki.md) 所述 **log.md** 时间线用法一致）。将 **`crate wiki promote`** 产出的概念纳入主网后，可在图谱里与 **`wiki/concepts/`** 一并浏览。
 
 ---
 
@@ -126,13 +126,13 @@ SORT file.name ASC
 
 ## 8. 常见问题
 
-- **Obsidian 里改了文件，compile 会用新版本吗？**  
+- **Obsidian 里改了文件，compile 会用新版本吗？**
   会。`compile` 每次读取磁盘上当前 `raw/**/*.md` 与 `**/*.pdf`。
 
-- **能在 Obsidian 移动端用 CRATE 吗？**  
+- **能在 Obsidian 移动端用 CRATE 吗？**
   CRATE 在电脑终端运行；移动端仍可用 Obsidian 读已同步过来的 `wiki/`。编译需在装有 Python/`crate` 的环境执行。
 
-- **图谱很乱？**  
+- **图谱很乱？**
   可把入口收窄到 `wiki/` 与 `raw/`，少用根目录散落 md；或用 Obsidian 的「排除文件夹」类插件隐藏 `meta/`（若不需要看）。
 
 ---

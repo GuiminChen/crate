@@ -247,9 +247,7 @@ created: {datetime.now(timezone.utc).isoformat()}
     tmp = out.with_name(out.name + ".tmp")
     tmp.write_text(full_body, encoding="utf-8")
     os.replace(tmp, out)
-    merge_save_raw_fingerprints(
-        ctx, fingerprints_for_paths(current_all, ctx.root)
-    )
+    merge_save_raw_fingerprints(ctx, fingerprints_for_paths(current_all, ctx.root))
     return CompileResult(output_path=out, skipped=False)
 
 
@@ -265,9 +263,7 @@ def run_wiki_graph_compile(
     client_factory: Callable[[], tuple[OpenAI, str]] | None = None,
 ) -> CompileResult:
     """Call LLM for JSON wiki graph; write concept pages and meta/wiki_index.json."""
-    user_content = build_compile_prompt(
-        ctx, paths, max_chars_per_file=eff_max_chars
-    )
+    user_content = build_compile_prompt(ctx, paths, max_chars_per_file=eff_max_chars)
     user_content = truncate_prompt_for_purpose(user_content, "compile")
     pfile = _prompt_file_path()
     try:
@@ -370,11 +366,7 @@ def run_wiki_graph_compile(
         def _slug_yaml(key: str, slugs: list[str]) -> str:
             if not slugs:
                 return ""
-            return (
-                f"{key}:\n"
-                + "\n".join(f"  - {json.dumps(s)}" for s in slugs)
-                + "\n"
-            )
+            return f"{key}:\n" + "\n".join(f"  - {json.dumps(s)}" for s in slugs) + "\n"
 
         src_lines = "\n".join(f"  - path: {s!r}" for s in sources if isinstance(s, str))
         rel_yaml = _slug_yaml("related_slugs", rel_slugs)

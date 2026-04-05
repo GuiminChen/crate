@@ -133,9 +133,7 @@ def _render_bodygraph_md(payload: dict[str, Any]) -> str:
         paths = sorted(node_paths)
     for p in sorted(paths):
         label = p.replace("|", "\\|")
-        lines.append(
-            f"| `{label}` | {out_deg.get(p, 0)} | {in_deg.get(p, 0)} |"
-        )
+        lines.append(f"| `{label}` | {out_deg.get(p, 0)} | {in_deg.get(p, 0)} |")
     lines.append("")
     return "\n".join(lines)
 
@@ -167,7 +165,5 @@ def write_wiki_body_graph(
     if write_md:
         md_path = ctx.wiki_dir() / "_index" / "BODYGRAPH.md"
         md_path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_text_under_vault(
-            md_path, _render_bodygraph_md(payload), ctx.root
-        )
+        atomic_write_text_under_vault(md_path, _render_bodygraph_md(payload), ctx.root)
     return json_path, md_path

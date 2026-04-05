@@ -6,7 +6,7 @@
 | [roadmap.md](roadmap.md) | **路线图**：相对 PRD 的待实现项、当前状态与增量编译语义说明（含 `watch` / `serve-search` 进展）。 |
 | [obsidian.md](obsidian.md) | **与 Obsidian 搭配**：库根即 vault、日常流程、链接与 Git 注意。 |
 | [PRD.md](PRD.md) | 产品需求：愿景、用户故事、MVP/V1/V2、功能与非功能需求、风险、里程碑；**§12** 与 [llm-wiki.md](llm-wiki.md) 的逐条对照与差距。 |
-| [llm-wiki.md](llm-wiki.md) | Karpathy《**LLM Wiki**》模式说明（英文，可复制给 Agent）；文末有指向本仓库 PRD/usage 的中文对照说明。 |
+| [llm-wiki.md](llm-wiki.md) | Karpathy《**LLM Wiki**》模式说明（英文；**权威正文**见 [Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)）；文末有指向本仓库 PRD/usage 的中文对照说明。 |
 | [technical-design.md](technical-design.md) | 技术方案：架构、`vault` 布局、编译 / 问答 / Lint 流程、检索门闸、安全与可观测性。 |
 | [providers.md](providers.md) | **多平台模型**：DeepSeek / OpenAI / 阿里 / 火山 / 腾讯 / OpenRouter / Azure、嵌入与 `CRATE_LLM_PROVIDER`。 |
 | [ci.md](ci.md) | CI：`crate doctor` / `lint` 示例 workflow、vault 仓库模板。 |
@@ -18,8 +18,9 @@
 
 ## 外部参考（灵感来源）
 
+- [LLM Wiki（Karpathy，GitHub Gist 正文）](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — 权威出处
 - [Andrej Karpathy 关于 LLM 知识库的帖文（X）](https://x.com/karpathy/status/2039805659525644595)
 - [Thread Reader 同串整理](https://threadreaderapp.com/thread/2039805659525644595.html)
-- [LLM Wiki（Karpathy 英文长文，本仓库副本）](llm-wiki.md)
+- [LLM Wiki（本仓库副本，便于离线 / 给 Agent）](llm-wiki.md)
 
 以上链接用于问题陈述的启发；**CRATE 为独立产品化抽象**，并非任何第三方工作流的官方实现。

@@ -5,12 +5,8 @@ from unittest.mock import MagicMock
 
 from crate.embedding_config import EmbeddingConfig
 from crate.init_vault import init_vault
-from crate.vector_index import (
-    build_vector_index,
-    chunk_markdown,
-    semantic_search_hits,
-)
 from crate.vault_paths import VaultContext
+from crate.vector_index import build_vector_index, chunk_markdown, semantic_search_hits
 
 
 def test_chunk_markdown_splits() -> None:
@@ -91,10 +87,7 @@ def test_build_vector_index_batches_at_most_n(tmp_path: Path) -> None:
             batch_lens.append(len(texts))
             n = len(texts)
             r = MagicMock()
-            r.data = [
-                MagicMock(index=i, embedding=[0.0] * 8)
-                for i in range(n)
-            ]
+            r.data = [MagicMock(index=i, embedding=[0.0] * 8) for i in range(n)]
             return r
 
         client.embeddings.create = emb_create

@@ -21,8 +21,8 @@ __all__ = ["run_watch_loop", "snapshot_raw_fingerprints"]
 
 def snapshot_raw_fingerprints(ctx: VaultContext) -> dict[str, dict[str, str]]:
     """SHA-256 map for all files under ``raw/`` (same basis as compile state)."""
-    from crate.compile_state import fingerprints_for_paths
     from crate.compile_run import collect_raw_sources
+    from crate.compile_state import fingerprints_for_paths
 
     paths = collect_raw_sources(ctx)
     return fingerprints_for_paths(paths, ctx.root)

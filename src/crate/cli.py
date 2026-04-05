@@ -396,28 +396,22 @@ def _cmd_wiki_index_extend(args: argparse.Namespace) -> int:
 def _cmd_report_raw_wiki(args: argparse.Namespace) -> int:
     import json
 
-    from crate.raw_wiki_coverage import (
-        build_raw_wiki_coverage,
-        write_raw_wiki_coverage,
-    )
+    from crate.raw_wiki_coverage import build_raw_wiki_coverage, write_raw_wiki_coverage
 
     ctx = _ctx_from_args(args)
     if args.write:
-        p = write_raw_wiki_coverage(
-            ctx, include_ephemeral=args.include_ephemeral
-        )
+        p = write_raw_wiki_coverage(ctx, include_ephemeral=args.include_ephemeral)
         print(p.relative_to(ctx.root).as_posix())
     else:
-        payload = build_raw_wiki_coverage(
-            ctx, include_ephemeral=args.include_ephemeral
-        )
+        payload = build_raw_wiki_coverage(ctx, include_ephemeral=args.include_ephemeral)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
 
 def _cmd_ingest(args: argparse.Namespace) -> int:
-    import structlog
     from pathlib import Path
+
+    import structlog
 
     from crate.activity_log import append_activity_log
     from crate.compile_run import run_compile

@@ -17,7 +17,7 @@
 
 ### 示例 workflow（复制到 vault 仓库 `.github/workflows/crate.yml`）
 
-将下面 `pip install` 一行改为你的安装方式（例如从 PyPI、私有 wheel，或 `git+https://github.com/<org>/<crate-fork>.git`）。
+将下面 `pip install` 一行改为你的安装方式（例如从 PyPI、私有 wheel，或 `git+https://github.com/GuiminChen/crate.git`（fork 则替换为你的 `owner/repo`））。
 
 ```yaml
 name: vault-crate-check
@@ -39,7 +39,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install crate CLI
-        run: pip install "crate @ git+https://github.com/OWNER/crate.git"
+        run: pip install "crate @ git+https://github.com/GuiminChen/crate.git"
 
       - name: Layout
         run: crate doctor --strict

@@ -48,7 +48,7 @@ Anthropic **不是** OpenAI 兼容协议。可选方式：
 
 推荐直接设置 **`CRATE_CHAT_BASE_URL`** 为 Azure 门户中给出的 **OpenAI 兼容** 部署 URL（通常含 `api-version` 查询参数），并设置 **`AZURE_OPENAI_API_KEY`**。
 
-或设置 **`AZURE_OPENAI_ENDPOINT`**（资源根 URL，无尾斜杠）+ **`AZURE_OPENAI_DEPLOYMENT`**（部署名），CRATE 会拼接为  
+或设置 **`AZURE_OPENAI_ENDPOINT`**（资源根 URL，无尾斜杠）+ **`AZURE_OPENAI_DEPLOYMENT`**（部署名），CRATE 会拼接为
 `{ENDPOINT}/openai/deployments/{DEPLOYMENT}`。若调用失败，请核对 Azure 要求的 **`api-version`** 并优先改用完整 **`CRATE_CHAT_BASE_URL`**。
 
 ---

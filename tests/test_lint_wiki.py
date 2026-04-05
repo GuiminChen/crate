@@ -120,9 +120,7 @@ def test_lint_orphans_resolved_when_linked(tmp_path: Path) -> None:
     init_vault(ctx)
     (tmp_path / "wiki" / "concepts" / "a.md").write_text("A\n[[b]]\n", encoding="utf-8")
     (tmp_path / "wiki" / "concepts" / "b.md").write_text("B\n[[a]]\n", encoding="utf-8")
-    assert (
-        lint_markdown_links(ctx, include_wikilinks=True, include_orphans=True) == []
-    )
+    assert lint_markdown_links(ctx, include_wikilinks=True, include_orphans=True) == []
 
 
 def test_lint_strict_concepts_bad_slug_ref(tmp_path: Path) -> None:

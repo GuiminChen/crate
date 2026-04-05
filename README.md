@@ -2,7 +2,7 @@
 
 **Compile Raw Archives, Tracked in the vault, into Encyclopedic wiki.**
 
-**Language / 语言：** **English (this file)** | [简体中文](README.zh.md)
+**Language:** **English** | [Chinese version](README.zh.md)
 
 CRATE is a **file-first personal knowledge compiler**: ingest messy **raw** captures (notes, papers, clips, repos), keep provenance in your **vault**, and iteratively **compile** them into a navigable **wiki**—with lightweight retrieval, linting, and optional feedback loops back into compilation.
 
@@ -12,16 +12,16 @@ CRATE is a **file-first personal knowledge compiler**: ingest messy **raw** capt
 
 ## Documentation
 
-Design docs below are **in Chinese** (中文).
+Linked docs below are **in Chinese** (for readability in this repo).
 
-- **[docs/README.md](docs/README.md)** — 文档索引
-- **[docs/usage.md](docs/usage.md)** — 使用说明（CLI、vault、环境变量、工作流）
-- **[agent-skills/crate-vault/SKILL.md](agent-skills/crate-vault/SKILL.md)** — 通用 Agent Skill（Cursor / Claude Code / 其它）；安装说明见 [docs/agent-skill.md](docs/agent-skill.md)
-- **[docs/providers.md](docs/providers.md)** — 多平台 LLM / 嵌入（DeepSeek、OpenAI、阿里、腾讯、火山、OpenRouter、Azure 等，`CRATE_LLM_PROVIDER`）
-- **[docs/roadmap.md](docs/roadmap.md)** — 路线图与待实现项（含增量编译语义）
-- **[docs/obsidian.md](docs/obsidian.md)** — 与 Obsidian 搭配（库根即 vault、日常流程）
-- **[docs/PRD.md](docs/PRD.md)** — 产品需求与里程碑
-- **[docs/technical-design.md](docs/technical-design.md)** — 架构、vault 布局、编译 / 问答 / Lint
+- **[docs/README.md](docs/README.md)** — documentation index
+- **[docs/usage.md](docs/usage.md)** — CLI, vault layout, environment variables, workflows
+- **[agent-skills/crate-vault/SKILL.md](agent-skills/crate-vault/SKILL.md)** — portable Agent Skill (Cursor, Claude Code, others); install paths in [docs/agent-skill.md](docs/agent-skill.md)
+- **[docs/providers.md](docs/providers.md)** — multi-vendor LLM / embeddings (DeepSeek, OpenAI, Alibaba, Tencent, Volcengine, OpenRouter, Azure, etc.; `CRATE_LLM_PROVIDER`)
+- **[docs/roadmap.md](docs/roadmap.md)** — roadmap and gaps (including incremental compile semantics)
+- **[docs/obsidian.md](docs/obsidian.md)** — using Obsidian with the vault (vault root, day-to-day flow)
+- **[docs/PRD.md](docs/PRD.md)** — product requirements and milestones
+- **[docs/technical-design.md](docs/technical-design.md)** — architecture, vault layout, compile / Q&A / lint
 
 ---
 
@@ -32,7 +32,7 @@ Design docs below are **in Chinese** (中文).
 - **Inspectable**: Diff-friendly outputs (wiki pages, slides, figures) you can review like code.
 - **Agent-ready**: Room for a QA/RAG layer that reads *relevant pages* instead of dumping the whole corpus into context.
 
-Design inspiration comes from the idea of treating an LLM as a **compiler** over your own materials—not a one-shot chat endpoint. (See [Andrej Karpathy’s thread on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595).) A **feature-by-feature mapping** to that workflow is in [docs/usage.md §7.5 Karpathy-style comparison](docs/usage.md#karpathy-style-comparison).
+Design inspiration comes from the idea of treating an LLM as a **compiler** over your own materials—not a one-shot chat endpoint. Karpathy’s **LLM Wiki** pattern is published as a [GitHub Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f); an [X thread](https://x.com/karpathy/status/2039805659525644595) discussed the same ideas earlier. A **feature-by-feature mapping** to that workflow is in [docs/usage.md §7.5 Karpathy-style comparison](docs/usage.md#karpathy-style-comparison); a repo copy of the article is [docs/llm-wiki.md](docs/llm-wiki.md).
 
 ---
 
@@ -59,16 +59,16 @@ Design inspiration comes from the idea of treating an LLM as a **compiler** over
 ```
 crate/
 ├── README.md
-├── README.zh.md          # Chinese README (简体中文)
+├── README.zh.md          # Chinese README
 ├── pyproject.toml
-├── environment.yml        # Conda 环境（可选，与 Anaconda/Miniconda 配合）
+├── environment.yml        # optional Conda env (Anaconda / Miniconda)
 ├── docs/                  # PRD, technical design (see docs/README.md)
 ├── prompts/               # Prompt templates for compile / architecture / codegen
 ├── scripts/               # Automation (e.g. optional AI PR review)
 ├── src/crate/             # Python package
 ├── tests/
 ├── .cursor/rules/         # Cursor agent guidance
-├── .vscode/               # Conda 路径与本机解释器（可选）
+├── .vscode/               # optional Conda path & interpreter hints
 ├── .devcontainer/         # Optional VS Code Dev Container
 └── .github/               # CI, issue/PR templates, optional AI review workflow
 ```
@@ -79,27 +79,27 @@ Example **vault** trees (user data, often outside this repo) are described in [d
 
 ## Getting started
 
-### Conda（Anaconda 默认安装路径）
+### Conda (default Anaconda install path)
 
-若本机使用 Anaconda 且 `conda` 位于 `/opt/anaconda3/condabin/conda`，可用仓库中的 [`environment.yml`](environment.yml) 一键创建名为 **`crate`** 的环境（Python 3.11，并以可编辑方式安装 `[dev]` 依赖）：
+If you use Anaconda and `conda` lives at `/opt/anaconda3/condabin/conda`, you can create a **`crate`** environment from [`environment.yml`](environment.yml) (Python 3.11, editable `[dev]` install):
 
 ```bash
-git clone https://github.com/<you>/crate.git
+git clone https://github.com/GuiminChen/crate.git
 cd crate
-/opt/anaconda3/condabin/conda env create -f environment.yml   # 首次
-# 或已创建后更新依赖：/opt/anaconda3/condabin/conda env update -f environment.yml
+/opt/anaconda3/condabin/conda env create -f environment.yml   # first time
+# or refresh deps later: /opt/anaconda3/condabin/conda env update -f environment.yml
 
 conda activate crate
 pre-commit install
 pytest -q
 ```
 
-已将 [`.vscode/settings.json`](.vscode/settings.json) 配置为使用上述 `conda` 可执行文件，并将默认解释器指向 `/opt/anaconda3/envs/crate/bin/python`（激活环境与 Cursor/VS Code 打开仓库后即可一致）。若你的安装路径不同，请在本机改掉这两项，或在命令面板中选择正确的 Python 解释器。
+[`.vscode/settings.json`](.vscode/settings.json) in this repo is set to that `conda` binary and interpreter `/opt/anaconda3/envs/crate/bin/python` so Cursor/VS Code match the activated env. If your paths differ, edit them locally or pick the interpreter in the command palette.
 
-### venv / 裸 Python（3.9+；Dev Container 为 3.11）
+### venv / system Python (3.9+; Dev Container uses 3.11)
 
 ```bash
-git clone https://github.com/<you>/crate.git
+git clone https://github.com/GuiminChen/crate.git
 cd crate
 python3 -m venv .venv
 source .venv/bin/activate   # or .venv\Scripts\activate on Windows

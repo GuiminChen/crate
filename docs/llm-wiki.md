@@ -1,5 +1,9 @@
 # LLM Wiki
 
+**Canonical source (Andrej Karpathy):** [llm-wiki.md — GitHub Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). This file in the CRATE repo is a **local copy** for offline reading and Agent prompts; prefer the gist for the latest wording.
+
+---
+
 A pattern for building personal knowledge bases using LLMs.
 
 This is an idea file, it is designed to be copy pasted to your own LLM Agent (e.g. OpenAI Codex, Claude Code, OpenCode / Pi, or etc.). Its goal is to communicate the high level idea, but your agent will build out the specifics in collaboration with you.
@@ -77,5 +81,7 @@ This document is intentionally abstract. It describes the idea, not a specific i
 ---
 
 ## 与 CRATE 仓库的对照（中文，本仓库维护）
+
+Karpathy 原文：**[LLM Wiki（GitHub Gist）](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)**。
 
 本仓库的 **CRATE** 是上述模式的一种**具体实现**（CLI：`compile` / `ask` / `lint`、`wiki graph`、`report raw-wiki`、`ingest`、`wiki index-extend` 等；模型端为 **OpenAI 兼容** 多平台，见 **[providers.md](providers.md)**）。英文原文保持通用；若需了解 **与本实现的逐条差距、PRD 是否覆盖**，请参阅 **[PRD.md](PRD.md)** 第 **12** 节（含「已对齐 / 差距」表）。简要对用户可见的对照表见 **[usage.md](usage.md)** §7.5。

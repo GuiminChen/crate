@@ -48,9 +48,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/<you>/crate"
-Repository = "https://github.com/<you>/crate"
-"Bug Tracker" = "https://github.com/<you>/crate/issues"
+Homepage = "https://github.com/GuiminChen/crate"
+Repository = "https://github.com/GuiminChen/crate"
+"Bug Tracker" = "https://github.com/GuiminChen/crate/issues"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
