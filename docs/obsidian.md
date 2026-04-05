@@ -61,9 +61,10 @@ crate init
 1. **采集**：在 Obsidian 或外部工具把材料放进 `raw/`（如 `raw/web-clips/xxx.md`、`raw/papers/foo.pdf`）。
 2. **编译**：在终端（库根或任意目录加 `--vault`）：
    ```bash
-   crate compile
+   crate compile              # 默认增量：仅 raw 有变更时才调模型；无变更会跳过
+   crate compile --full       # 需要时对全部 raw 重编一版（与 --no-incremental 等价）
    ```
-   阅读 **`wiki/notes/`** 下新生成的编译笔记；可在 Obsidian 图谱里打开相关文件。
+   阅读 **`wiki/notes/`** 下新生成的编译笔记；可在 Obsidian 图谱里打开相关文件。详见 [usage.md](usage.md) 第 5.2 节与 **7.1b**。
 3. **问答**：  
    ```bash
    crate ask 根据 raw 里关于 X 的材料，总结三个要点

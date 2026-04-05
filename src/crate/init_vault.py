@@ -6,7 +6,13 @@ from pathlib import Path
 
 from crate.vault_paths import VaultContext
 
-__all__ = ["init_vault", "VAULT_README", "PLACEHOLDER_TOPICS", "PLACEHOLDER_RECENT"]
+__all__ = [
+    "init_vault",
+    "VAULT_README",
+    "PLACEHOLDER_TOPICS",
+    "PLACEHOLDER_RECENT",
+    "PLACEHOLDER_INDEX",
+]
 
 VAULT_README = """# CRATE vault
 
@@ -27,6 +33,11 @@ PLACEHOLDER_RECENT = """# 最近变更
 由 `crate compile` / 回流 更新。
 """
 
+PLACEHOLDER_INDEX = """# Wiki index
+
+人类可读入口；由 `crate compile --wiki-graph` 更新。首次初始化占位。
+"""
+
 DIRS: tuple[str, ...] = (
     "raw/papers",
     "raw/web-clips",
@@ -42,6 +53,7 @@ DIRS: tuple[str, ...] = (
 FILES: tuple[tuple[str, str], ...] = (
     ("wiki/_index/TOPICS.md", PLACEHOLDER_TOPICS),
     ("wiki/_index/RECENT.md", PLACEHOLDER_RECENT),
+    ("wiki/_index/INDEX.md", PLACEHOLDER_INDEX),
     ("VAULT.md", VAULT_README),
 )
 

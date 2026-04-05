@@ -79,6 +79,7 @@ vault/
     outputs/              # 问答产出（可回流）
   meta/                   # 可选：构建状态
     compile_state.json
+    wiki_index.json       # 多页编译（--wiki-graph）机器可读索引
     lint_last_report.md
   AGENTS.md               # 可选：面向编码 Agent 的项目说明
 ```
@@ -137,6 +138,14 @@ model: "..."   # 可选
 5. **索引更新**：刷新 `TOPICS.md` / 反向链接表（可由第二步合并或单独轻量任务）。
 
 **失败与回滚**：保留上一版 `compile_run_id`；失败不写半篇。
+
+**多页 wiki（`compile --wiki-graph`）**
+
+- 与单条 `wiki/notes/compile-*.md` 共用同一套增量 raw 选择与 `meta/compile_state.json` 指纹。
+- 模型在 system 中嵌入 [`prompts/wiki_multi.md`](../prompts/wiki_multi.md)，**用户消息**仍为各 raw 文件拼接（与默认 compile 相同）。
+- 期望输出为 **单一 JSON 对象**（或 fenced ` ```json ` 块），字段见提示中的 schema：`version`、`concepts[]`（`slug`、`title`、`body`、`sources`）、可选 `synthesis_note`、`topics_markdown`。
+- **写入**：每个概念页先写 `*.md.tmp` 再 `os.replace`；`meta/wiki_index.json` 同样原子写。解析失败时只写一条 fallback 编译笔记（`wiki_graph_fallback: true`），stderr 告警。
+- **`meta/wiki_index.json`**：`version`、`generated`、`model`、`compile_stamp`、`raw_sources`（本轮编译涉及的 raw 相对路径）、`concepts`（`slug`、`path`、`title`、`sources`）。供后续语义巡检、脚本或 Agent 消费；人类可读主题入口仍以 `wiki/_index/TOPICS.md` 为主（可由 `topics_markdown` 自动生成摘要版）。
 
 ### 4.2 问答（Q&A Agent）
 

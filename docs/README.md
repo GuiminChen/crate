@@ -2,7 +2,8 @@
 
 | 文档 | 说明 |
 |------|------|
-| [usage.md](usage.md) | **使用说明**：安装、vault、`crate` 子命令、环境变量、目录约定、示例与常见问题。 |
+| [usage.md](usage.md) | **使用说明**：安装、vault、`crate` 子命令、环境变量、目录约定、示例、**[Karpathy 对照（§7.5）](usage.md#karpathy-style-comparison)**、常见问题。 |
+| [roadmap.md](roadmap.md) | **路线图**：相对 PRD 的待实现项、当前状态与增量编译语义说明（含 `watch` / `serve-search` 进展）。 |
 | [obsidian.md](obsidian.md) | **与 Obsidian 搭配**：库根即 vault、日常流程、链接与 Git 注意。 |
 | [PRD.md](PRD.md) | 产品需求：愿景、用户故事、MVP/V1/V2、功能与非功能需求、风险、里程碑。 |
 | [technical-design.md](technical-design.md) | 技术方案：架构、`vault` 布局、编译 / 问答 / Lint 流程、检索门闸、安全与可观测性。 |

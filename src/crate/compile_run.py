@@ -2,23 +2,47 @@
 
 from __future__ import annotations
 
+import os
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 from openai import OpenAI
 
-from crate.llm import DeepSeekConfig, build_openai_client, load_deepseek_config
+from crate.compile_state import (
+    fingerprints_for_paths,
+    has_valid_incremental_state,
+    load_compile_state_dict,
+    merge_save_raw_fingerprints,
+    select_paths_for_compile,
+)
+from crate.llm import (
+    DeepSeekConfig,
+    build_openai_client,
+    chat_extra_kwargs_for_purpose,
+    load_deepseek_config,
+    truncate_prompt_for_purpose,
+)
 from crate.vault_paths import VaultContext, VaultPathError
 
 __all__ = [
+    "CompileResult",
     "collect_raw_markdown",
     "collect_raw_sources",
     "extract_pdf_text",
     "run_compile",
     "build_compile_prompt",
 ]
+
+
+@dataclass(frozen=True)
+class CompileResult:
+    """Outcome of ``run_compile``."""
+
+    output_path: Path | None
+    skipped: bool
 
 
 def collect_raw_sources(ctx: VaultContext) -> list[Path]:
@@ -107,24 +131,70 @@ def build_compile_prompt(
 def run_compile(
     ctx: VaultContext,
     *,
+    full: bool = False,
+    wiki_graph: bool = False,
     client: OpenAI | None = None,
     model: str | None = None,
     config: DeepSeekConfig | None = None,
     client_factory: Callable[[], tuple[OpenAI, str]] | None = None,
     max_chars_per_file: int = 8000,
-) -> Path:
+) -> CompileResult:
     """
     Read raw markdown and PDF text, call chat completion, write a wiki note.
 
-    Output path: ``wiki/notes/compile-*.md``.
+    Output path: ``wiki/notes/compile-*.md`` (unless incremental skip).
+
+    Incremental mode (default): uses ``meta/compile_state.json`` fingerprints;
+    when nothing changed since last successful compile, returns
+    ``CompileResult(None, skipped=True)`` without calling the model.
 
     If ``client`` is provided, ``model`` must be provided too. Otherwise uses
     ``client_factory`` (for tests) or ``build_openai_client``.
     """
-    paths = collect_raw_sources(ctx)
-    user_content = build_compile_prompt(
-        ctx, paths, max_chars_per_file=max_chars_per_file
+    ctx.meta_dir().mkdir(parents=True, exist_ok=True)
+    state_data = load_compile_state_dict(ctx)
+    has_state = has_valid_incremental_state(state_data)
+    stored_fp = state_data.get("raw_fingerprints", {})
+    if not isinstance(stored_fp, dict):
+        stored_fp = {}
+
+    current_all = collect_raw_sources(ctx)
+    paths, skipped = select_paths_for_compile(
+        ctx.root,
+        current_all,
+        stored_fp,
+        full=full,
+        has_valid_state=has_state,
     )
+    if skipped:
+        return CompileResult(output_path=None, skipped=True)
+
+    assert paths is not None
+    eff_max_chars = max_chars_per_file
+    _m = os.environ.get("CRATE_COMPILE_MAX_CHARS_PER_FILE", "").strip()
+    if _m:
+        try:
+            eff_max_chars = max(1, int(_m))
+        except ValueError:
+            pass
+    if wiki_graph:
+        from crate.compile_wiki import run_wiki_graph_compile
+
+        return run_wiki_graph_compile(
+            ctx,
+            paths,
+            current_all,
+            eff_max_chars=eff_max_chars,
+            client=client,
+            model=model,
+            config=config,
+            client_factory=client_factory,
+        )
+
+    user_content = build_compile_prompt(
+        ctx, paths, max_chars_per_file=eff_max_chars
+    )
+    user_content = truncate_prompt_for_purpose(user_content, "compile")
     system = (
         "You are a CRATE wiki compiler. Given raw markdown and (where provided) "
         "plain text extracted from PDFs in a personal vault, produce a concise "
@@ -139,7 +209,7 @@ def run_compile(
         client_used = client
         model_name = model
     else:
-        cfg = config or load_deepseek_config()
+        cfg = config or load_deepseek_config(purpose="compile")
         client_used, model_name = build_openai_client(cfg)
 
     resp = client_used.chat.completions.create(
@@ -149,6 +219,7 @@ def run_compile(
             {"role": "user", "content": user_content},
         ],
         temperature=0.2,
+        **chat_extra_kwargs_for_purpose("compile"),
     )
     text = (resp.choices[0].message.content or "").strip()
     if not text:
@@ -183,5 +254,12 @@ created: {datetime.now(timezone.utc).isoformat()}
 ---
 
 """
-    out.write_text(front + text + "\n", encoding="utf-8")
-    return out
+    full_body = front + text + "\n"
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.write_text(full_body, encoding="utf-8")
+    os.replace(tmp, out)
+
+    merge_save_raw_fingerprints(
+        ctx, fingerprints_for_paths(current_all, ctx.root)
+    )
+    return CompileResult(output_path=out, skipped=False)

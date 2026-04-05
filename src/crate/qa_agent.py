@@ -11,7 +11,13 @@ from openai import OpenAI
 
 from crate.ephemeral import validate_session_id
 from crate.feedback import append_output_to_recent
-from crate.llm import DeepSeekConfig, build_openai_client, load_deepseek_config
+from crate.llm import (
+    DeepSeekConfig,
+    build_openai_client,
+    chat_extra_kwargs_for_purpose,
+    load_deepseek_config,
+    truncate_prompt_for_purpose,
+)
 from crate.vault_paths import VaultContext
 from crate.vault_tools import TOOL_SPECS, VaultTools
 
@@ -86,12 +92,13 @@ def run_qa(
         client_used = client
         model_name = model
     else:
-        cfg = config or load_deepseek_config()
+        cfg = config or load_deepseek_config(purpose="qa")
         client_used, model_name = build_openai_client(cfg)
 
+    user_msg = truncate_prompt_for_purpose(question, "qa")
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": system},
-        {"role": "user", "content": question},
+        {"role": "user", "content": user_msg},
     ]
 
     last_output_rel: str | None = None
@@ -105,6 +112,7 @@ def run_qa(
             tools=cast(Any, tools),
             tool_choice="auto",
             temperature=0.3,
+            **chat_extra_kwargs_for_purpose("qa"),
         )
         msg = resp.choices[0].message
         last_assistant_text = (msg.content or "").strip()

@@ -11,6 +11,7 @@ def test_init_creates_expected_tree(tmp_path: Path) -> None:
     created = init_vault(ctx)
     assert (tmp_path / "raw" / "papers").is_dir()
     assert (tmp_path / "wiki" / "_index" / "TOPICS.md").is_file()
+    assert (tmp_path / "wiki" / "_index" / "INDEX.md").is_file()
     assert (tmp_path / "meta" / "compile_state.json").is_file()
     assert len(created) > 0
 

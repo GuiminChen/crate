@@ -1,11 +1,13 @@
 """Tests for compile POC (mocked LLM)."""
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
 from crate.compile_run import (
+    CompileResult,
     build_compile_prompt,
     collect_raw_markdown,
     collect_raw_sources,
@@ -82,12 +84,121 @@ def test_run_compile_writes_wiki_note(tmp_path: Path) -> None:
     def factory() -> tuple[MagicMock, str]:
         return client, "fake-model"
 
-    out = run_compile(ctx, client_factory=factory)
-    assert out.is_file()
-    text = out.read_text(encoding="utf-8")
+    result = run_compile(ctx, client_factory=factory)
+    assert isinstance(result, CompileResult)
+    assert not result.skipped
+    assert result.output_path is not None
+    assert result.output_path.is_file()
+    text = result.output_path.read_text(encoding="utf-8")
     assert "compile_run" in text
     assert "Synth" in text
     client.chat.completions.create.assert_called_once()
+
+
+def test_run_compile_incremental_skips_second_run(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    note = tmp_path / "raw" / "papers" / "x.md"
+    note.write_text("# X\n", encoding="utf-8")
+
+    client = MagicMock()
+    client.chat.completions.create.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content="## Once"))]
+    )
+
+    def factory() -> tuple[MagicMock, str]:
+        return client, "fake-model"
+
+    r1 = run_compile(ctx, client_factory=factory)
+    assert not r1.skipped
+    assert r1.output_path is not None
+    client.chat.completions.create.assert_called_once()
+
+    r2 = run_compile(ctx, client_factory=factory)
+    assert r2.skipped
+    assert r2.output_path is None
+    client.chat.completions.create.assert_called_once()
+
+
+def test_run_compile_full_after_skip_calls_again(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    (tmp_path / "raw" / "papers" / "x.md").write_text("# X\n", encoding="utf-8")
+
+    client = MagicMock()
+    client.chat.completions.create.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content="## Body"))]
+    )
+
+    def factory() -> tuple[MagicMock, str]:
+        return client, "fake-model"
+
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+
+    run_compile(ctx, full=True, client_factory=factory)
+    assert client.chat.completions.create.call_count == 2
+
+
+def test_legacy_v1_compile_state_upgrades_to_v2(tmp_path: Path) -> None:
+    """Old mtime/size fingerprints are ignored until a successful v2 save."""
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    note = tmp_path / "raw" / "papers" / "x.md"
+    note.write_text("# X\n", encoding="utf-8")
+    legacy = {
+        "version": 1,
+        "raw_fingerprints": {
+            "raw/papers/x.md": {"mtime_ns": 0, "size": 999},
+        },
+    }
+    (tmp_path / "meta" / "compile_state.json").write_text(
+        json.dumps(legacy),
+        encoding="utf-8",
+    )
+
+    client = MagicMock()
+    client.chat.completions.create.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content="## Upgraded"))]
+    )
+
+    def factory() -> tuple[MagicMock, str]:
+        return client, "fake-model"
+
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+
+    data = json.loads((tmp_path / "meta" / "compile_state.json").read_text())
+    assert data["version"] == 2
+    assert "sha256" in data["raw_fingerprints"]["raw/papers/x.md"]
+
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+
+
+def test_run_compile_incremental_on_edit(tmp_path: Path) -> None:
+    ctx = VaultContext(root=tmp_path)
+    init_vault(ctx)
+    note = tmp_path / "raw" / "papers" / "x.md"
+    note.write_text("# X\n", encoding="utf-8")
+
+    client = MagicMock()
+    client.chat.completions.create.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content="## A"))]
+    )
+
+    def factory() -> tuple[MagicMock, str]:
+        return client, "fake-model"
+
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 1
+
+    note.write_text("# X\nmore\n", encoding="utf-8")
+    run_compile(ctx, client_factory=factory)
+    assert client.chat.completions.create.call_count == 2
 
 
 def test_load_deepseek_config_requires_key(monkeypatch: "pytest.MonkeyPatch") -> None:

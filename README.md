@@ -14,6 +14,7 @@ Design docs below are **in Chinese** (中文).
 
 - **[docs/README.md](docs/README.md)** — 文档索引
 - **[docs/usage.md](docs/usage.md)** — 使用说明（CLI、vault、环境变量、工作流）
+- **[docs/roadmap.md](docs/roadmap.md)** — 路线图与待实现项（含增量编译语义）
 - **[docs/obsidian.md](docs/obsidian.md)** — 与 Obsidian 搭配（库根即 vault、日常流程）
 - **[docs/PRD.md](docs/PRD.md)** — 产品需求与里程碑
 - **[docs/technical-design.md](docs/technical-design.md)** — 架构、vault 布局、编译 / 问答 / Lint
@@ -27,7 +28,7 @@ Design docs below are **in Chinese** (中文).
 - **Inspectable**: Diff-friendly outputs (wiki pages, slides, figures) you can review like code.
 - **Agent-ready**: Room for a QA/RAG layer that reads *relevant pages* instead of dumping the whole corpus into context.
 
-Design inspiration comes from the idea of treating an LLM as a **compiler** over your own materials—not a one-shot chat endpoint. (See [Andrej Karpathy’s thread on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595).)
+Design inspiration comes from the idea of treating an LLM as a **compiler** over your own materials—not a one-shot chat endpoint. (See [Andrej Karpathy’s thread on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595).) A **feature-by-feature mapping** to that workflow is in [docs/usage.md §7.5 Karpathy-style comparison](docs/usage.md#karpathy-style-comparison).
 
 ---
 
@@ -112,8 +113,10 @@ After `pip install -e ".[dev]"`, the `crate` command is available:
 
 ```bash
 crate init [--vault PATH]           # create raw/wiki/meta tree (default vault = cwd)
-crate compile [--vault PATH]        # raw/**/*.md + **/*.pdf (text extract); needs API key
-crate lint [--vault PATH] [--json]  # check wiki relative links; exit 1 if broken
+crate compile [--vault PATH] [--full|--no-incremental]  # raw/**/*.md + **/*.pdf; default incremental
+crate watch [--vault PATH] [--debounce-seconds SEC]       # poll raw/; auto compile after quiet period
+crate serve-search [--vault PATH] [--port N]              # HTTP GET /search?q=... (JSON; &semantic=1 after crate index)
+crate lint [--vault PATH] [--json] [--wikilinks] [--raw]  # wiki/; --raw includes raw/; optional [[wikilink]]
 ```
 
 `compile` calls DeepSeek (`deepseek-chat` at `https://api.deepseek.com` by default); override with `CRATE_DEEPSEEK_BASE_URL` / `CRATE_DEEPSEEK_MODEL` if needed.
@@ -130,7 +133,8 @@ crate ask [--vault PATH] [--no-feedback] What is in TOPICS?
 
 ```bash
 crate search [--vault PATH] [--json] [--max-hits N] [--semantic] <words...>
-crate stats [--vault PATH] [--json] [--strict] [--exclude-outputs]
+crate stats [--vault PATH] [--json] [--strict] [--exclude-outputs]   # --json includes readiness (like serve-search /health)
+crate doctor [--vault PATH] [--json] [--strict]   # crate_version, dirs, meta artifacts, readiness
 crate index [--vault PATH] [--reset]   # needs CRATE_EMBEDDING_API_KEY or OPENAI_API_KEY
 ```
 
