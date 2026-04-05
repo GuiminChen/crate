@@ -9,7 +9,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from openai import OpenAI
 
@@ -49,7 +49,10 @@ def extract_json_object(text: str) -> dict[str, Any]:
     fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", t)
     if fence:
         t = fence.group(1).strip()
-    return json.loads(t)
+    data = json.loads(t)
+    if not isinstance(data, dict):
+        raise ValueError("expected JSON object at top level")
+    return cast(dict[str, Any], data)
 
 
 def _prompt_file_path() -> Path:

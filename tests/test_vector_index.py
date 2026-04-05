@@ -62,7 +62,7 @@ def test_build_vector_index_mocked(tmp_path: Path) -> None:
 
 
 def test_build_vector_index_batches_at_most_n(tmp_path: Path) -> None:
-    """DashScope and some hosts cap inputs per embeddings request (e.g. 10)."""
+    """Ensure embedding batches respect per-request caps (e.g. DashScope at 10)."""
     ctx = VaultContext(root=tmp_path)
     (tmp_path / "raw" / "papers").mkdir(parents=True)
     for i in range(25):

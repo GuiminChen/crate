@@ -65,7 +65,9 @@ def make_search_handler_class(ctx: VaultContext) -> type[BaseHTTPRequestHandler]
                 except ValueError:
                     max_hits = 20
                 max_hits = max(0, min(max_hits, MAX_SEARCH_HITS_CAP))
-                semantic = _truthy_semantic_flag((qs.get("semantic") or [None])[0])
+                _sem_vals = qs.get("semantic")
+                _sem_raw = _sem_vals[0] if _sem_vals else None
+                semantic = _truthy_semantic_flag(_sem_raw)
                 if semantic:
                     body_obj: dict = {"query": q, "mode": "semantic", "hits": []}
                     cfg = load_embedding_config()

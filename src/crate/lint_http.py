@@ -11,6 +11,8 @@ from crate.vault_paths import VaultContext, VaultPathError
 
 _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
+_UA = "crate-lint/1.0 (+https://github.com/GuiminChen/crate)"
+
 __all__ = ["lint_http_external_links"]
 
 
@@ -19,11 +21,7 @@ def _http_check_one(url: str, timeout: float) -> tuple[bool, str]:
     from urllib.error import HTTPError, URLError
     from urllib.request import Request, urlopen
 
-    req = Request(
-        url,
-        headers={"User-Agent": "crate-lint/1.0 (+https://github.com/GuiminChen/crate)"},
-        method="HEAD",
-    )
+    req = Request(url, headers={"User-Agent": _UA}, method="HEAD")
     try:
         with urlopen(req, timeout=timeout) as resp:
             code = getattr(resp, "status", resp.getcode())
@@ -32,13 +30,7 @@ def _http_check_one(url: str, timeout: float) -> tuple[bool, str]:
             return False, f"HTTP {code}"
     except HTTPError as e:
         if e.code == 405:
-            req_g = Request(
-                url,
-                headers={
-                    "User-Agent": "crate-lint/1.0 (+https://github.com/GuiminChen/crate)"
-                },
-                method="GET",
-            )
+            req_g = Request(url, headers={"User-Agent": _UA}, method="GET")
             try:
                 with urlopen(req_g, timeout=timeout) as resp:
                     code = getattr(resp, "status", resp.getcode())

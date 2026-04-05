@@ -158,6 +158,7 @@ def run_compile(
     ctx.meta_dir().mkdir(parents=True, exist_ok=True)
     current_all = collect_raw_sources(ctx)
 
+    paths: list[Path] | None
     if only_paths is not None:
         raw_set = {p.resolve() for p in current_all}
         resolved: list[Path] = []
