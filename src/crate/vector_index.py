@@ -44,6 +44,7 @@ def _embedding_api_user_message(exc: BaseException) -> str:
 __all__ = [
     "INDEX_FILENAME",
     "chunk_markdown",
+    "embed_openai_batch",
     "build_vector_index",
     "semantic_search_hits",
     "index_database_path",
@@ -141,6 +142,16 @@ def _embed_batch(
     for item in sorted(resp.data, key=lambda x: x.index):
         out.append(list(item.embedding))
     return out
+
+
+def embed_openai_batch(
+    client: OpenAI,
+    model: str,
+    texts: list[str],
+) -> list[list[float]]:
+    """Embed multiple strings via the OpenAI-compatible embeddings API."""
+
+    return _embed_batch(client, model, texts)
 
 
 def _pack_embedding(vec: list[float]) -> tuple[bytes, int]:

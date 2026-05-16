@@ -3,7 +3,7 @@
 | 文档 | 说明 |
 |------|------|
 | [usage.md](usage.md) | **使用说明**：安装、vault、`crate` 子命令（含 **`wiki graph`** / **`report raw-wiki`** / **`ingest`** / **`wiki index-extend`**）、环境变量、[providers.md](providers.md) 多平台模型、目录约定、示例、**[Karpathy 对照（§7.5）](usage.md#karpathy-style-comparison)**、常见问题。 |
-| [roadmap.md](roadmap.md) | **路线图**：相对 PRD 的待实现项、当前状态与增量编译语义说明（含 `watch` / `serve-search` 进展）。 |
+| [roadmap.md](roadmap.md) | **路线图**：相对 PRD 的待实现项、当前状态与增量编译语义（含 `watch` / `serve-search`）；**§8** 为 Karpathy Gist **评论区实践摘要**与 CRATE 对照。 |
 | [obsidian.md](obsidian.md) | **与 Obsidian 搭配**：库根即 vault、日常流程、链接与 Git 注意。 |
 | [PRD.md](PRD.md) | 产品需求：愿景、用户故事、MVP/V1/V2、功能与非功能需求、风险、里程碑；**§12** 与 [llm-wiki.md](llm-wiki.md) 的逐条对照与差距。 |
 | [llm-wiki.md](llm-wiki.md) | Karpathy《**LLM Wiki**》模式说明（英文；**权威正文**见 [Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)）；文末有指向本仓库 PRD/usage 的中文对照说明。 |
